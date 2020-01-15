@@ -1,0 +1,7 @@
+praw.ini
+*.db
+
+*.pyc
+__pycache__
+
+*.swp
