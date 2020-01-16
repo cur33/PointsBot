@@ -156,6 +156,12 @@ corresponding flair texts.
 The order of these lines doesn't matter; the bot will sort them in order of
 point totals.
 
+### Make the bot a mod in your subreddit
+
+Some of the bot's behaviors, e.g. altering redditor flairs, require moderator
+permissions. It should require just the "Flair" and "Posts" permissions, so you
+don't need to grant it full permissions.
+
 ## Usage
 
 The simplest way to run the bot is to navigate to the project root directory and
