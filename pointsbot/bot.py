@@ -9,20 +9,6 @@ from . import comment, database
 
 CONFIGPATH = 'pointsbot.ini'
 
-# SUBREDDIT_NAME = 'MinecraftHelp'
-# PRAW_SITE_NAME = 'bot'
-
-# TODO Make LEVELS a dict instead
-# TODO Could also make a Level class or namedtuple that contains more info, e.g.
-# flair css or template id
-"""
-LEVELS = [
-    ('Helper', 5),
-    ('Trusted Helper', 15),
-    ('Super Helper', 40),
-]
-"""
-
 ### Main Function ###
 
 
@@ -32,18 +18,15 @@ def run():
 
     # Get the user flair levels in ascending order by point value
     # TODO Make levels a dict instead
-    print(config.options('Levels'))
-
-    levels = []
-    for opt in config.options('Levels'):
-        levels.append((opt, config.getint('Levels', opt)))
+    # TODO Could also make a Level class or namedtuple that contains more info, e.g.
+    # flair css or template id
+    levels = [(o, config.getint('Levels', o)) for o in config.options('Levels')]
     levels.sort(key=lambda pair: pair[1])
-    print(levels)
 
-    # levels = [(key, int(val)) for key, val in config.items('Levels')]
-    # levels = sorted(levels, key=lambda keyval: keyval[1])
-
-    #levels = sorted(config.items('Levels'), key=lambda pair: pair[1])
+    # levels = []
+    # for opt in config.options('Levels'):
+        # levels.append((opt, config.getint('Levels', opt)))
+    # levels.sort(key=lambda pair: pair[1])
 
     # Connect to Reddit
     reddit = praw.Reddit(site_name=config['Core']['praw_site_name'])
@@ -55,8 +38,6 @@ def run():
     print(f'Is mod? {bool(subreddit.moderator(redditor=reddit.user.me()))}')
 
     # TODO pass database path instead of setting global variable
-    # database.DB_PATH = config['Core']['database_name']
-    # database.init()
     db = database.Database(config['Core']['database_name'])
 
     # The pattern to look for in comments when determining whether to award a point
@@ -135,6 +116,7 @@ def marks_as_solved(comment, solved_pattern):
     #comment.refresh()   # probably not needed, but the docs are a tad unclear
     return (not comment.is_root
             and comment.is_submitter
+            and not comment.parent().is_submitter
             and solved_pattern.search(comment.body))
 
 
