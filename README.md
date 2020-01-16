@@ -90,6 +90,18 @@ information to a public (or even private) code repository.
 
 ### praw.ini
 
+Several credentials are needed for running your bot, each of which is listed in
+the `praw.ini` config file:
+
+* `client_id`: Copy from your app preferences, as specified in the steps below.
+* `client_secret`: Copy from your app preferences, as specified in the steps
+    below.
+* `user-agent`: This field can be left as-is, thought if you'd like, you can
+    change it by following
+    [these guidelines](https://github.com/reddit-archive/reddit/wiki/API).
+* `username`: The username for the bot account.
+* `password`: The password for the bot account.
+
 In order to make a bot, you must first have a bot account. This could be a
 personal account, but it is wise to create a dedicate account for the bot,
 especially one with the word "bot" somewhere in the name.
@@ -117,18 +129,6 @@ If you have already done this in the past, the `client_id` and `client_secret`
 can be found by navigating to your
 [app preferences](https://www.reddit.com/prefs/apps) and selecting the "edit"
 button for the app under the "developed applications" section.
-
-Several credentials are needed for running your bot, each of which is listed in
-the `praw.ini` config file:
-
-* `client_id`: Copy from your app preferences, as specified in the previous
-    steps.
-* `client_secret`: Copy from your app preferences, as specified in the previous
-    steps.
-* `user-agent`: This field can be left as-is, thought if you'd like, you can
-    change it by following [these guidelines]().
-* `username`: The username for the bot account.
-* `password`: The password for the bot account.
 
 ### pointsbot.ini
 
@@ -218,31 +218,48 @@ To ensure that a point is awarded to the correct user:
 
 ## Questions
 
-* Should it really display a progress bar without a bounds, since the user could
+1. Should it really display a progress bar without a bounds, since the user could
     get a large amount of points? Or should it end at 40 or whatever the max
     level is?
-* Should the bot reply directly to the solution comment, or the OP's "!Solved"
-    comment and just tag the point earner?
-* Should the bot check whether comments containing "!solved" have been edited to
+1. When replying to a solution, should the bot...
+    1. Reply directly to the comment containing the solution (current behavior),
+        or
+    1. Reply to the comment marking the submission as "!solved" and tag the
+        solver?
+1. Should the bot check whether comments containing "!solved" have been edited to
     remove it?
     - If so, it could do that daily or something.
     - This will be especially important if a "recovery mode" is implemented that
         crawls through the whole subreddit to rebuild the database, since the
         bot would only be able to see comments that haven't been removed, or
         the newest version of edited comments.
-* When a "!solved" comment is found, should the bot award the point to the
-    author of the parent comment or the root comment? In other words, should
-    only top-level comments be considered for points?
-* Should the bot assume that the parent comment belongs to the user who solved
-    the issue, or should it find the first ancestor comment not made by the OP
-    (in case the OP responds "!solved" to one of their own comments on the
-    solution comment)?
-* Should the bot still keep track of points for mods, even though it doesn't
-    update their flair?
-* Should the reply comment always tag them, even if it's not their first point?
-* When a user levels up, should the reply comment also mention that they have
+1. Should the bot be prepared to handle complex comment threads (e.g. multiple
+    replies to the comment before it is marked as solved)? In other words, when
+    the bot finds a comment containing the "!solved" string, should it...
+    1. Assume that the author of the top-level comment is earning the point?
+    1. Assume that the author of the parent comment of the "!solved" comment
+        is earning the point? (current behavior)
+        - Currently, the bot will either award the point to the author of the
+            parent comment to the "!solved" comment, unless the author is the
+            submission's OP, in which case is simply ignores the "!solved"
+            comment altogether.
+        - If we go with this behavior, I will probably change it to start at the
+            parent of the "!solved" comment and work its way up until it finds a
+            comment author who is not the OP, and then award them the point.
+        - A workaround for this is to ask users to provide a username following
+            the "!solved" word, starting with "r/" of course to make it easy to
+            identify. Then, in situations where the bot is unable to determine
+            who earned the point and the OP didn't provide a username after
+            "!solved", the bot could even reply to the OP's "!solved" comment
+            and request the username of the solver.
+1. Should the bot still keep track of points for mods, even though it doesn't
+    update their flair? (I'd assume so, but it doesn't hurt to ask).
+1. Should the bot's reply comment always tag the user earning the point, even if
+    it's responding directly to their comment? (Currently, it only tags the user
+    when they earn their first point.)
+1. When a user levels up, should the reply comment also mention that they have
     been awarded a new flair?
-* Should the comment contain a notice that the post was made by a bot, similar
+1. Should the comment contain a notice that the post was made by a bot, similar
     to the notice on posts by automod?
 
 ## Terms of Use for a bot for Reddit
