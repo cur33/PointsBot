@@ -8,6 +8,7 @@
 * [Usage](#usage)
 * [Ideas](#ideas)
 * [Questions](#questions)
+* [Terms of Use for a bot for Reddit](#terms-of-use-for-a-bot-for-reddit)
 * [License](#license)
 
 ## Description
@@ -243,6 +244,14 @@ To ensure that a point is awarded to the correct user:
     been awarded a new flair?
 * Should the comment contain a notice that the post was made by a bot, similar
     to the notice on posts by automod?
+
+## Terms of Use for a bot for Reddit
+
+Since this is an open-source, unmonetized program, it should be considered
+non-commercial, and is thus allowed to use the Reddit API without registration.
+However, this bot is provided under the permissive MIT license. Therefore, if
+your use of the bot becomes commercial, you should
+[read the Reddit API terms and register here](https://www.reddit.com/wiki/api).
 
 ## License
 
