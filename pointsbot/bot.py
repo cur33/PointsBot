@@ -20,13 +20,14 @@ def run():
     # TODO Make levels a dict instead
     # TODO Could also make a Level class or namedtuple that contains more info, e.g.
     # flair css or template id
-    levels = [(o, config.getint('Levels', o)) for o in config.options('Levels')]
-    levels.sort(key=lambda pair: pair[1])
 
-    # levels = []
-    # for opt in config.options('Levels'):
-        # levels.append((opt, config.getint('Levels', opt)))
+    # levels = [(o, config.getint('Levels', o)) for o in config.options('Levels')]
     # levels.sort(key=lambda pair: pair[1])
+
+    levels = []
+    for opt in config.options('Levels'):
+        levels.append((opt.title(), config.getint('Levels', opt)))
+    levels.sort(key=lambda pair: pair[1])
 
     # Connect to Reddit
     reddit = praw.Reddit(site_name=config['Core']['praw_site_name'])
