@@ -5,6 +5,7 @@
 * [Description](#description)
 * [Installation](#installation)
 * [Usage](#usage)
+* [TODO](#todo)
 * [Ideas](#ideas)
 * [Questions](#questions)
 * [License](#license)
@@ -62,11 +63,15 @@ run:
 pipenv run python -m pointsbot
 ```
 
+## TODO
+
+* Logging
+
 ## Ideas
 
 ### Config
 
-* Store all config and data in a `pointsbot` directory or similar in the user's
+* Store all config and data in a `.pointsbot` directory or similar in the user's
     home or data directory (OS-dependent).
 * Could do something similar to packages like PRAW:
     1. Look in current working directory first.
@@ -148,5 +153,5 @@ To ensure that a point is awarded to the correct user:
 
 ## License
 
-Copyright &copy;2020 Collin U. Rapp. This repository is released under the GNU
-GPLv3 license.
+Copyright &copy;2020 Collin U. Rapp. This repository is released under the MIT
+license.

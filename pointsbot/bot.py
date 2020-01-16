@@ -1,20 +1,4 @@
-'''
-    A bot for Reddit to award points to helpful subreddit members.
-    Copyright (C) 2020  Collin U. Rapp
-
-    This program is free software: you can redistribute it and/or modify
-    it under the terms of the GNU General Public License as published by
-    the Free Software Foundation, either version 3 of the License, or
-    (at your option) any later version.
-
-    This program is distributed in the hope that it will be useful,
-    but WITHOUT ANY WARRANTY; without even the implied warranty of
-    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-    GNU General Public License for more details.
-
-    You should have received a copy of the GNU General Public License
-    along with this program.  If not, see <https://www.gnu.org/licenses/>.
-'''
+import configparser
 import re
 
 import praw
@@ -23,38 +7,57 @@ from . import comment, database
 
 ### Globals ###
 
+CONFIGPATH = 'pointsbot.ini'
+
 # SUBREDDIT_NAME = 'MinecraftHelp'
-SUBREDDIT_NAME = 'GlipGlorp7BotTests'
-PRAW_SITE_NAME = 'testbot'
+# PRAW_SITE_NAME = 'bot'
 
 # TODO Make LEVELS a dict instead
 # TODO Could also make a Level class or namedtuple that contains more info, e.g.
 # flair css or template id
+"""
 LEVELS = [
     ('Helper', 5),
     ('Trusted Helper', 15),
     ('Super Helper', 40),
 ]
+"""
 
 ### Main Function ###
 
 
 def run():
-    # Connect to Reddit
-    reddit = praw.Reddit(site_name=PRAW_SITE_NAME)
-    subreddit = reddit.subreddit(SUBREDDIT_NAME)
+    config = configparser.ConfigParser()
+    config.read(CONFIGPATH)
 
-    # xdebugx
-    print(f'Connected to reddit as {reddit.user.me()}')
+    # Get the user flair levels in ascending order by point value
+    # TODO Make levels a dict instead
+    print(config.options('Levels'))
+
+    levels = []
+    for opt in config.options('Levels'):
+        levels.append((opt, config.getint('Levels', opt)))
+    levels.sort(key=lambda pair: pair[1])
+    print(levels)
+
+    # levels = [(key, int(val)) for key, val in config.items('Levels')]
+    # levels = sorted(levels, key=lambda keyval: keyval[1])
+
+    #levels = sorted(config.items('Levels'), key=lambda pair: pair[1])
+
+    # Connect to Reddit
+    reddit = praw.Reddit(site_name=config['Core']['praw_site_name'])
+    subreddit = reddit.subreddit(config['Core']['subreddit_name'])
+
+    print(f'Connected to Reddit as {reddit.user.me()}')
     print(f'Read-only? {reddit.read_only}')
     print(f'Watching subreddit {subreddit.title}')
-    print(f'Mod? {bool(subreddit.moderator(redditor=reddit.user.me()))}')
+    print(f'Is mod? {bool(subreddit.moderator(redditor=reddit.user.me()))}')
 
-    database.init()
-
-    # Initialize database
-    #if not database.exists():
-        #database.create()
+    # TODO pass database path instead of setting global variable
+    # database.DB_PATH = config['Core']['database_name']
+    # database.init()
+    db = database.Database(config['Core']['database_name'])
 
     # The pattern to look for in comments when determining whether to award a point
     # solved_pat = re.compile('!solved', re.IGNORECASE)
@@ -62,7 +65,6 @@ def run():
 
     # Monitor new comments for confirmed solutions
     for comm in subreddit.stream.comments(skip_existing=True):
-        # xdebugx
         print('Found comment')
         print(f'Comment text: "{comm.body}"')
 
@@ -75,11 +77,6 @@ def run():
             # Search the flattened comments tree
             is_first_solution = True
             for subcomm in submission.comments.list():
-                # if (subcomm.is_submitter
-                        # and subcomm.id != comm.id
-                        # and not subcomm.is_root
-                        # and solved_pat.search(subcomm.body)
-                        # and subcomm.created_utc < comm.created_utc):
                 if (subcomm.id != comm.id
                         and marks_as_solved(subcomm, solved_pat)
                         and subcomm.created_utc < comm.created_utc):
@@ -90,28 +87,26 @@ def run():
 
             if not is_first_solution:
                 # Skip this "!solved" comment and wait for the next
-                # xdebugx
                 print('This is not the first solution')
                 continue
 
-            # xdebugx
             print('This is the first solution')
             print_solution_info(comm)
 
             solution = comm.parent()
             solver = solution.author
             print(f'Adding point for {solver.name}')
-            database.add_point(solver)
-            points = database.get_redditor_points(solver)
+            db.add_point(solver)
+            points = db.get_points(solver)
             print(f'Points for {solver.name}: {points}')
 
             # Reply to the comment containing the solution
-            reply_body = comment.make(solver, points, LEVELS)
+            reply_body = comment.make(solver, points, levels)
             print(f'Replying with: "{reply_body}"')
             solution.reply(reply_body)
 
             # Check if (non-mod) user flair should be updated to new level
-            for levelname, levelpoints in LEVELS:
+            for levelname, levelpoints in levels:
                 # If the redditor's points total is equal to one of the levels,
                 # that means they just reached that level
                 if points == levelpoints:
@@ -122,13 +117,11 @@ def run():
                         print(f'Setting flair text to {levelname}')
                         subreddit.flair.set(solver, text=levelname)
                     else:
-                        # xdebugx
                         print('Don\'t update flair b/c user is mod')
 
                     # Don't need to check the rest of the levels
                     break
         else:
-            # xdebugx
             print('Not a "!solved" comment')
 
 
@@ -139,7 +132,7 @@ def marks_as_solved(comment, solved_pattern):
     '''Return True if  not top-level comment, from OP, contains "!Solved"; False
     otherwise.
     '''
-    #comment.refresh()
+    #comment.refresh()   # probably not needed, but the docs are a tad unclear
     return (not comment.is_root
             and comment.is_submitter
             and solved_pattern.search(comment.body))
