@@ -18,11 +18,12 @@ subreddit and awards points to the user responsible for the solution.
 This bot is based on the description in
 [this request](https://www.reddit.com/r/RequestABot/comments/emdeim/expert_level_bot_coding/).
 While this could be used for other subreddits, this means that it is intended
-for r/MinecraftHelp.
+for [r/MinecraftHelp](https://www.reddit.com/r/MinecraftHelp/).
 
 The bot will award a point to a redditor when the OP of a submission includes
-"!Solved" somewhere in a reply to the redditor's comment on that submission.
-These points will allow the redditor to advance to different levels:
+"!Solved" or "!solved" somewhere in a reply to the redditor's comment on that
+submission.  These points will allow the redditor to advance to different
+levels:
 
 * Helper (5 points)
 * Trusted Helper (15 points)
@@ -40,21 +41,32 @@ The first time a point is awarded, the bot's reply comment will also include a
 brief message detailing the points system.
 
 Only the submission OP's first "!Solved" comment should result in a point being
-awarded.
+awarded for each submission.
 
 ## Installation
 
 Requirements:
 
-* python3 (specifically, version 3.7 or greater)
-    * pip (should be installed alongside python)
-* pipenv
+* [python3](www.python.org) (specifically, version 3.7 or greater)
+    * pip (should be installed automatically alongside python)
+* [pipenv](https://pipenv.readthedocs.io/en/latest/)
+    * Install by running `pip install pipenv`
+
+First, download this project using `git` or by downloading a zipfile from the
+Github repository.
 
 To install, navigate to the project root directory and run `pipenv install`.
 To uninstall (i.e. delete the project's virtual environment and the installed
 python packages), instead run `pipenv --rm`.
 
 ## Usage
+
+The bot can be configured by changing the values in the configuration files:
+
+* `praw.ini`
+    - Contains the account information for the bot
+* `pointsbot.ini`
+    - Contains settings for bot behavior
 
 The simplest way to run the bot is to navigate to the project root directory and
 run:
@@ -63,11 +75,7 @@ run:
 pipenv run python -m pointsbot
 ```
 
-## TODO
-
-* Logging
-
-## Ideas
+## Ideas & To-Do
 
 ### Config
 
@@ -81,6 +89,7 @@ pipenv run python -m pointsbot
 * Could also allow use of environment variables, but this seems unnecessary and
     could be a little too technical (though any more technically-minded users
     might appreciate the option).
+* Consolidate `pointsbot.ini` and `praw.ini` into a single config file.
 
 ### Database
 
@@ -90,16 +99,6 @@ a column denoting whether the post has been deleted, if that information is
 decided to be useful when determining a user's points.
 
 ### Determining when to award points
-
-Methods for awarding points, in ascending order of difficulty:
-
-* Could just observe and wait for !Solved in addition to automoderator doing the
-    same, but this will create duplicate logic between automoderator and the
-    bot.
-* Could instruct automoderator to send modmail and then have the bot use that as
-    its trigger to action.
-* Assuming that only mods can change flairs, could find a way to check when a
-    submission's flair is changed to solved, and then award the points.
 
 To ensure that points are only awarded for the first comment marked as a
 solution:
@@ -123,6 +122,7 @@ To ensure that a point is awarded to the correct user:
     is decided upon. However, if the username argument is provided, the bot
     could simple check that one of the comments in the comment tree belongs to
     that user, and then award them the point.
+    - Honestly, this is probably overcomplicated and unnecessary, though.
 
 ## Questions
 
