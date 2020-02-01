@@ -21,38 +21,6 @@ def run():
     is_mod = bool(subreddit.moderator(redditor=reddit.user.me()))
     print_level(1, f'Is mod? {is_mod}')
 
-    testpoints = [1, 3, 5, 10, 15, 30, 45, 75] + list(range(100, 551, 50))
-
-    for sub in subreddit.new():
-        if sub.title == 'Testing comment scenarios':
-            redditor = sub.author
-            for points in testpoints:
-                body = f'Solver: {redditor}\n\nTotal points after solving: {points}'
-                print_level(0, body)
-                comm = sub.reply(body)
-                if comm:
-                    level_info = level.user_level_info(points, levels)
-                    body = reply.make(redditor, points, level_info)
-                    comm.reply(body)
-                else:
-                    print_level(1, 'ERROR: Unable to comment')
-            break
-
-
-def real_run():
-    cfg = config.load()
-    levels = cfg.levels
-
-    # Connect to Reddit
-    reddit = praw.Reddit(site_name=cfg.praw_site_name)
-    subreddit = reddit.subreddit(cfg.subreddit_name)
-
-    print_level(0, f'Connected to Reddit as {reddit.user.me()}')
-    print_level(1, f'Read-only? {reddit.read_only}')
-    print_level(0, f'Watching subreddit {subreddit.title}')
-    is_mod = bool(subreddit.moderator(redditor=reddit.user.me()))
-    print_level(1, f'Is mod? {is_mod}')
-
     db = database.Database(cfg.database_path)
 
     # The pattern that determines whether a post is marked as solved
@@ -165,5 +133,37 @@ def print_solution_info(comm):
     print_level(2, '"Solved" comment:')
     print_level(3, f'Author: {comm.author.name}')
     print_level(3, f'Body:   {comm.body}')
+
+
+def make_comments():
+    cfg = config.load()
+    levels = cfg.levels
+
+    # Connect to Reddit
+    reddit = praw.Reddit(site_name=cfg.praw_site_name)
+    subreddit = reddit.subreddit(cfg.subreddit_name)
+
+    print_level(0, f'Connected to Reddit as {reddit.user.me()}')
+    print_level(1, f'Read-only? {reddit.read_only}')
+    print_level(0, f'Watching subreddit {subreddit.title}')
+    is_mod = bool(subreddit.moderator(redditor=reddit.user.me()))
+    print_level(1, f'Is mod? {is_mod}')
+
+    testpoints = [1, 3, 5, 10, 15, 30, 45, 75] + list(range(100, 551, 50))
+
+    for sub in subreddit.new():
+        if sub.title == 'Testing comment scenarios':
+            redditor = sub.author
+            for points in testpoints:
+                body = f'Solver: {redditor}\n\nTotal points after solving: {points}'
+                print_level(0, body)
+                comm = sub.reply(body)
+                if comm:
+                    level_info = level.user_level_info(points, levels)
+                    body = reply.make(redditor, points, level_info)
+                    comm.reply(body)
+                else:
+                    print_level(1, 'ERROR: Unable to comment')
+            break
 
 

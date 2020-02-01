@@ -56,9 +56,6 @@ def level_up(redditor, level_name, tag_user=True):
     start = f'Congrats u/{redditor.name}, y' if tag_user else 'Y'
     return (f'{start}ou have leveled up to "{level_name}"! Your flair has been '
             'updated accordingly.')
-    # return (f'Congrats u/{redditor.name}, y
-    # return (f'Congrats u/{redditor.name}, you have leveled up to "{level_name}"! '
-            # 'Your flair has been updated accordingly.')
 
 
 def new_star(redditor, first_star):
@@ -118,7 +115,5 @@ def footer():
     return ('^(This bot is written and maintained by GlipGlorp7 '
             '| Learn more and view the source code on '
             '[Github](https://github.com/cur33/PointsBot))')
-    # ^(This bot is written and maintained by u/GlipGlorp7 | Learn more and view the source code on [Github](https://github.com/cur33/PointsBot))
-    # ^([Learn more]() | [View source code](https://github.com/cur33/PointsBot) | [Contacts mods]())
 
 

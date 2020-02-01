@@ -8,7 +8,6 @@ from .level import Level
 
 ROOTPATH = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
 CONFIGPATH = os.path.join(ROOTPATH, 'pointsbot.ini')
-# CONFIGPATH = abspath(join(dirname(__file__), '..', 'pointsbot.ini'))
 
 # TODO add default config values to pass to configparser
 
@@ -29,7 +28,6 @@ class Config:
         database_path = os.path.join(ROOTPATH, config['Core']['database_name'])
 
         # Get the user flair levels in ascending order by point value
-        # TODO Make levels a dict instead
         levels = []
         for opt in config.options('Levels'):
             name, points = opt.title(), config.getint('Levels', opt)
