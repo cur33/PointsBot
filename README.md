@@ -6,8 +6,6 @@
 * [Installation](#installation)
 * [Configuration](#configuration)
 * [Usage](#usage)
-* [Ideas](#ideas)
-* [Questions](#questions)
 * [Terms of Use for a bot for Reddit](#terms-of-use-for-a-bot-for-reddit)
 * [License](#license)
 
@@ -16,17 +14,13 @@
 This is a bot for Reddit that monitors solutions to questions or problems in a
 subreddit and awards points to the user responsible for the solution.
 
-This bot is intended as a solution for
+This bot was conceived as a response to
 [this request](https://www.reddit.com/r/RequestABot/comments/emdeim/expert_level_bot_coding/).
 
 The bot will award a point to a redditor when the OP of a submission includes
 "!Solved" or "!solved" somewhere in a reply to the redditor's comment on that
 submission.  These points will allow the redditor to advance to different
-levels:
-
-* Helper (5 points)
-* Trusted Helper (15 points)
-* Super Helper (40 points)
+levels.
 
 At each level, the redditor's flair for the subreddit will be updated to reflect
 their current level. However, the bot should not change a mod's flair.
@@ -35,6 +29,9 @@ Each time a point is awarded, the bot will reply to the solution comment to
 notify the redditor of their total points, with a progress bar to show how many
 points they need to reach the next level and a reminder of the title of the next
 level.
+In order to prevent the progress bar from being excessively long, some points
+will be consolidated into stars instead. Right now, stars are hard-coded to
+represent 100 points each, but this behavior may be configurable in the future.
 
 The first time a point is awarded, the bot's reply comment will also include a
 brief message detailing the points system.
@@ -170,103 +167,6 @@ run:
 ```bash
 pipenv run python -m pointsbot
 ```
-
-## Ideas
-
-### Config
-
-* Store all config and data in a hidden `.pointsbot` directory or similar in the
-    user's home or data directory (OS-dependent).
-* Could do something similar to packages like PRAW:
-    1. Look in current working directory first.
-    2. Look in OS-dependent location next.
-    3. (Maybe) Finally, could look in the directory containing the source files
-       (using `__file__`).
-* Could also allow use of environment variables, but this seems unnecessary and
-    could be a little too technical (though any more technically-minded users
-    might appreciate the option).
-* Consolidate `pointsbot.ini` and `praw.ini` into a single config file.
-* Write a CLI script or GUI to handle this so the config values don't have to be
-    changed manually.
-
-### Database
-
-* Should it keep track of the solved posts for future reference and calculate
-    points on the fly, rather than just keeping track of points? If so, should
-    have a column denoting whether the post has been deleted, if that
-    information is decided to be useful when determining a user's points.
-
-### Determining when to award points
-
-To ensure that points are only awarded for the first comment marked as a
-solution:
-
-* Alter the database to allow for tracking of each submission and the first
-    comment marked as the solution. Then, everytime a new solution comment is
-    detected, simply check the database to see if the submission is already
-    counted. This will avoid unnecessary calls to Reddit, which would include
-    scanning all the submission comments each time.
-* This approach could also make it simpler to check whether a solution comment
-    has been edited. Instead of having to do a daily search for edits, it could
-    just check the original solution comment to ensure that it still contains
-    the "!solved" string. If not, it can remove points from that author and
-    award points to the new author.
-
-To ensure that a point is awarded to the correct user:
-
-* We could expand the "!solved" bot summons to include an optional username
-    argument. Without the argument, the bot will award the point to either the
-    top-level comment or the parent comment of the "!solved" comment, whichever
-    is decided upon. However, if the username argument is provided, the bot
-    could simple check that one of the comments in the comment tree belongs to
-    that user, and then award them the point.
-    - Honestly, this is probably overcomplicated and unnecessary, though.
-
-## Questions
-
-1. Should it really display a progress bar without a bounds, since the user could
-    get a large amount of points? Or should it end at 40 or whatever the max
-    level is?
-1. When replying to a solution, should the bot...
-    1. Reply directly to the comment containing the solution (current behavior),
-        or
-    1. Reply to the comment marking the submission as "!solved" and tag the
-        solver?
-1. Should the bot check whether comments containing "!solved" have been edited to
-    remove it?
-    - If so, it could do that daily or something.
-    - This will be especially important if a "recovery mode" is implemented that
-        crawls through the whole subreddit to rebuild the database, since the
-        bot would only be able to see comments that haven't been removed, or
-        the newest version of edited comments.
-1. Should the bot be prepared to handle complex comment threads (e.g. multiple
-    replies to the comment before it is marked as solved)? In other words, when
-    the bot finds a comment containing the "!solved" string, should it...
-    1. Assume that the author of the top-level comment is earning the point?
-    1. Assume that the author of the parent comment of the "!solved" comment
-        is earning the point? (current behavior)
-        - Currently, the bot will either award the point to the author of the
-            parent comment to the "!solved" comment, unless the author is the
-            submission's OP, in which case is simply ignores the "!solved"
-            comment altogether.
-        - If we go with this behavior, I will probably change it to start at the
-            parent of the "!solved" comment and work its way up until it finds a
-            comment author who is not the OP, and then award them the point.
-        - A workaround for this is to ask users to provide a username following
-            the "!solved" word, starting with "r/" of course to make it easy to
-            identify. Then, in situations where the bot is unable to determine
-            who earned the point and the OP didn't provide a username after
-            "!solved", the bot could even reply to the OP's "!solved" comment
-            and request the username of the solver.
-1. Should the bot still keep track of points for mods, even though it doesn't
-    update their flair? (I'd assume so, but it doesn't hurt to ask).
-1. Should the bot's reply comment always tag the user earning the point, even if
-    it's responding directly to their comment? (Currently, it only tags the user
-    when they earn their first point.)
-1. When a user levels up, should the reply comment also mention that they have
-    been awarded a new flair?
-1. Should the comment contain a notice that the post was made by a bot, similar
-    to the notice on posts by automod?
 
 ## Terms of Use for a bot for Reddit
 

@@ -1,0 +1,66 @@
+from collections import namedtuple
+
+### Data Structures ###
+
+# A (string, int) tuple
+Level = namedtuple('Level', 'name points')
+
+# A ([Level], Level, Level) tuple;
+# previous can be empty, and exactly one of current and next can be None
+LevelInfo = namedtuple('LevelInfo', 'previous current next')
+# LevelInfo = namedtuple('LevelInfo', 'prev cur next')
+
+### Functions ###
+
+
+"""
+def get_levels(config):
+    levels = []
+    for opt in config.options('Levels'):
+        name, points = opt.title(), config.getint('Levels', opt)
+        levels.append(Level(name, points))
+        # levels.append((opt.title(), config.getint('Levels', opt)))
+    # levels.sort(key=lambda pair: pair[1])
+    levels.sort(key=lambda lvl: lvl.points)
+    return levels
+"""
+
+
+def user_level_info(points, levels):
+    '''Return a tuple the user's previous (plural), current, and next levels.
+
+    If the user has yet to reach the first level, return ([], None, <first
+    level>).
+    If the user has reached the max level, return ([previous], <max level>,
+    None).
+
+    Assume levels is sorted in ascending order by points.
+    '''
+    past_levels, cur_level, next_level = [], None, None
+
+    for level in levels:
+        lvlname, lvlpoints = level
+        if points < lvlpoints:
+            next_level = level
+            break
+        if cur_level:
+            past_levels.append(cur_level)
+        cur_level = level
+    else:
+        next_level = None
+
+    return LevelInfo(past_levels, cur_level, next_level)
+
+
+def is_max_level(level_info):
+    return not level_info.next
+
+
+"""
+def is_max_level(points, levels):
+    '''Assume levels is sorted in ascending order by points.'''
+    # return points >= levels[-1][1]
+    return points >= levels[-1].points
+"""
+
+

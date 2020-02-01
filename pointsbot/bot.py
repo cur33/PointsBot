@@ -1,136 +1,169 @@
-import configparser
 import re
 
 import praw
 
-from . import comment, database
-
-### Globals ###
-
-CONFIGPATH = 'pointsbot.ini'
+from . import config, database, level, reply
 
 ### Main Function ###
 
 
 def run():
-    config = configparser.ConfigParser()
-    config.read(CONFIGPATH)
-
-    # Get the user flair levels in ascending order by point value
-    # TODO Make levels a dict instead
-    # TODO Could also make a Level class or namedtuple that contains more info, e.g.
-    # flair css or template id
-
-    # levels = [(o, config.getint('Levels', o)) for o in config.options('Levels')]
-    # levels.sort(key=lambda pair: pair[1])
-
-    levels = []
-    for opt in config.options('Levels'):
-        levels.append((opt.title(), config.getint('Levels', opt)))
-    levels.sort(key=lambda pair: pair[1])
+    cfg = config.load()
+    levels = cfg.levels
 
     # Connect to Reddit
-    reddit = praw.Reddit(site_name=config['Core']['praw_site_name'])
-    subreddit = reddit.subreddit(config['Core']['subreddit_name'])
+    reddit = praw.Reddit(site_name=cfg.praw_site_name)
+    subreddit = reddit.subreddit(cfg.subreddit_name)
 
-    print(f'Connected to Reddit as {reddit.user.me()}')
-    print(f'Read-only? {reddit.read_only}')
-    print(f'Watching subreddit {subreddit.title}')
-    print(f'Is mod? {bool(subreddit.moderator(redditor=reddit.user.me()))}')
+    print_level(0, f'Connected to Reddit as {reddit.user.me()}')
+    print_level(1, f'Read-only? {reddit.read_only}')
+    print_level(0, f'Watching subreddit {subreddit.title}')
+    is_mod = bool(subreddit.moderator(redditor=reddit.user.me()))
+    print_level(1, f'Is mod? {is_mod}')
 
-    # TODO pass database path instead of setting global variable
-    db = database.Database(config['Core']['database_name'])
+    testpoints = [1, 3, 5, 10, 15, 30, 45, 75] + list(range(100, 551, 50))
 
-    # The pattern to look for in comments when determining whether to award a point
-    # solved_pat = re.compile('!solved', re.IGNORECASE)
+    for sub in subreddit.new():
+        if sub.title == 'Testing comment scenarios':
+            redditor = sub.author
+            for points in testpoints:
+                body = f'Solver: {redditor}\n\nTotal points after solving: {points}'
+                print_level(0, body)
+                comm = sub.reply(body)
+                if comm:
+                    level_info = level.user_level_info(points, levels)
+                    body = reply.make(redditor, points, level_info)
+                    comm.reply(body)
+                else:
+                    print_level(1, 'ERROR: Unable to comment')
+            break
+
+
+def real_run():
+    cfg = config.load()
+    levels = cfg.levels
+
+    # Connect to Reddit
+    reddit = praw.Reddit(site_name=cfg.praw_site_name)
+    subreddit = reddit.subreddit(cfg.subreddit_name)
+
+    print_level(0, f'Connected to Reddit as {reddit.user.me()}')
+    print_level(1, f'Read-only? {reddit.read_only}')
+    print_level(0, f'Watching subreddit {subreddit.title}')
+    is_mod = bool(subreddit.moderator(redditor=reddit.user.me()))
+    print_level(1, f'Is mod? {is_mod}')
+
+    db = database.Database(cfg.database_path)
+
+    # The pattern that determines whether a post is marked as solved
+    # Could also just use re.IGNORECASE flag
     solved_pat = re.compile('![Ss]olved')
 
     # Monitor new comments for confirmed solutions
-    for comm in subreddit.stream.comments(skip_existing=True):
-        print('Found comment')
-        print(f'Comment text: "{comm.body}"')
+    # Passing pause_after=0 will bypass the internal exponential delay, but have
+    # to check if any comments are returned with each query
+    for comm in subreddit.stream.comments(skip_existing=True, pause_after=0):
+        if comm is None:
+            continue
+
+        print_level(0, '\nFound comment')
+        print_level(1, f'Comment text: "{comm.body}"')
 
         if marks_as_solved(comm, solved_pat):
-            # Ensure that this is the first "!solved" comment in the thread
-            submission = comm.submission
-            # Retrieve any comments hidden by "more comments"
-            submission.comments.replace_more(limit=0)
-
-            # Search the flattened comments tree
-            is_first_solution = True
-            for subcomm in submission.comments.list():
-                if (subcomm.id != comm.id
-                        and marks_as_solved(subcomm, solved_pat)
-                        and subcomm.created_utc < comm.created_utc):
-                    # There is an earlier comment for the same submission
-                    # already marked as a solution by the OP
-                    is_first_solution = False
-                    break
-
-            if not is_first_solution:
+            if not is_first_solution(comm, solved_pat):
                 # Skip this "!solved" comment and wait for the next
-                print('This is not the first solution')
+                print_level(1, 'Not the first solution')
                 continue
 
-            print('This is the first solution')
+            print_level(1, 'This is the first solution')
             print_solution_info(comm)
 
-            solution = comm.parent()
-            solver = solution.author
-            print(f'Adding point for {solver.name}')
+            solver = comm.parent().author
+            print_level(1, f'Adding point for {solver.name}')
             db.add_point(solver)
             points = db.get_points(solver)
-            print(f'Points for {solver.name}: {points}')
+            print_level(1, f'Points for {solver.name}: {points}')
 
-            # Reply to the comment containing the solution
-            reply_body = comment.make(solver, points, levels)
-            print(f'Replying with: "{reply_body}"')
-            solution.reply(reply_body)
+            level_info = level.user_level_info(points, levels)
+
+            # TODO move comment to the end and use some things, e.g. whether
+            # flair is set, when building comment (to avoid duplicate logic)
+
+            # Reply to the comment marking the submission as solved
+            reply_body = reply.make(solver, points, level_info)
+            # reply_body = reply.make(solver, points, levels)
+            print_level(1, f'Replying with: "{reply_body}"')
+            comm.reply(reply_body)
 
             # Check if (non-mod) user flair should be updated to new level
-            for levelname, levelpoints in levels:
-                # If the redditor's points total is equal to one of the levels,
-                # that means they just reached that level
-                if points == levelpoints:
-                    print('User reached new level')
-                    if not subreddit.moderator(redditor=solver):
-                        # TODO can also use the keyword arg css_class *or*
-                        # flair_template_id to style the flair
-                        print(f'Setting flair text to {levelname}')
-                        subreddit.flair.set(solver, text=levelname)
-                    else:
-                        print('Don\'t update flair b/c user is mod')
-
-                    # Don't need to check the rest of the levels
-                    break
+            if level_info.current and level_info.current.points == points:
+                print_level(1, f'User reached level: {level_info.current.name}')
+                if not subreddit.moderator(redditor=solver):
+                    print_level(2, 'Setting flair')
+                    print_level(3, f'Flair text: {level_info.current.name}')
+                    # TODO
+                    # print_level(3, f'Flair template ID: {}')
+                    subreddit.flair.set(solver, text=levelname)
+                else:
+                    print_level(2, 'Solver is mod; don\'t alter flair')
         else:
-            print('Not a "!solved" comment')
+            print_level(1, 'Not a "!solved" comment')
 
 
-### Auxiliary Functions ###
+### Reddit Comment Functions ###
 
 
 def marks_as_solved(comment, solved_pattern):
-    '''Return True if  not top-level comment, from OP, contains "!Solved"; False
-    otherwise.
+    '''Return True if the comment meets the criteria for marking the submission
+    as solved, False otherwise.
     '''
-    #comment.refresh()   # probably not needed, but the docs are a tad unclear
     return (not comment.is_root
             and comment.is_submitter
             and not comment.parent().is_submitter
             and solved_pattern.search(comment.body))
 
 
-### Debugging ###
+def is_first_solution(solved_comment, solved_pattern):
+    # Retrieve any comments hidden by "more comments"
+    # Passing limit=0 will replace all "more comments"
+    submission = solved_comment.submission
+    submission.comments.replace_more(limit=0)
+
+    # Search the flattened comments tree
+    for comment in submission.comments.list():
+        if (comment.id != solved_comment.id
+                and marks_as_solved(comment, solved_pattern)
+                and comment.created_utc < solved_comment.created_utc):
+            # There is an earlier comment for the same submission
+            # already marked as a solution by the OP
+            return False
+    return True
+
+
+def find_solver(comment):
+    # TODO
+    pass
+
+
+def make_flair(points, levels):
+    # TODO
+    pass
+
+
+### Debugging & Logging ###
+
+
+def print_level(num_levels, string):
+    print('\t' * num_levels + string)
 
 
 def print_solution_info(comm):
-    print('Submission solved')
-    print('\tSolution comment:')
-    print(f'\t\tAuthor: {comm.parent().author.name}')
-    print(f'\t\tBody:   {comm.parent().body}')
-    print('\t"Solved" comment:')
-    print(f'\t\tAuthor: {comm.author.name}')
-    print(f'\t\tBody:   {comm.body}')
+    print_level(1, 'Submission solved')
+    print_level(2, 'Solution comment:')
+    print_level(3, f'Author: {comm.parent().author.name}')
+    print_level(3, f'Body:   {comm.parent().body}')
+    print_level(2, '"Solved" comment:')
+    print_level(3, f'Author: {comm.author.name}')
+    print_level(3, f'Body:   {comm.body}')
 
 

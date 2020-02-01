@@ -1,9 +1,10 @@
 praw.ini
 pointsbot.ini
-todo.md
-*.db
 
+*.db
 *.pyc
 __pycache__
 
+docs/
+*.out
 *.swp
