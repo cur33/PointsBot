@@ -4,7 +4,7 @@
 
 * [Description](#description)
 * [Installation](#installation)
-* [Configuration](#configuration)
+* [Setup](#setup)
 * [Usage](#usage)
 * [Terms of Use for a bot for Reddit](#terms-of-use-for-a-bot-for-reddit)
 * [License](#license)
@@ -60,44 +60,31 @@ To uninstall (i.e. delete the project's virtual environment and the installed
 python packages), navigate to the project root directory and instead run
 `pipenv --rm`.
 
-## Configuration
+## Setup
 
-The bot can be configured by changing the values in the configuration files in
-the project root directory:
+### Configuration file
 
-* `praw.ini`
-    - Contains the account information for the bot
-* `pointsbot.ini`
-    - Contains settings for bot behavior
+The bot can be configured by changing or adding to the values in the
+configuration file, `pointsbot.toml`.
 
-You shouldn't have to worry about it, but if you need it, the syntax for the
-config files can be found on the
-[INI file format's Wikipedia page](https://en.wikipedia.org/wiki/INI_file).
+You shouldn't have to worry about it, but if you need it, information on the
+TOML syntax used for the file can be found on
+[Github](https://github.com/toml-lang/toml).
 
 If this is your first time running the bot, you will need to copy
-`praw.sample.ini` to a new file called `praw.ini`, and likewise copy
-`pointsbot.sample.ini` to a new file called `pointsbot.ini`. Any instances of
-the word "REDACTED" should be replaced with the desired values; other values
-should work as-is, but can be changed as desired.
+`pointsbot.sample.toml` to a new file called `pointsbot.toml`. Any instances of
+the word "REDACTED" should be replaced with the appropriate values; other values
+should work as-is, but can be changed as needed.
 
-The reason for this is that these config files (especially `praw.ini`) can
-contain sensitive information, and maintaining only sample versions of these
-files helps developers to avoid accidentally uploading that sensitive
-information to a public (or even private) code repository.
+This is because the config file can contain sensitive information, and
+maintaining only sample versions of these files helps developers to avoid
+accidentally uploading that sensitive information to a public (or even private)
+code repository.
 
-### praw.ini
+More information on the specific config options can be found in the comments in
+the sample config file.
 
-Several credentials are needed for running your bot, each of which is listed in
-the `praw.ini` config file:
-
-* `client_id`: Copy from your app preferences, as specified in the steps below.
-* `client_secret`: Copy from your app preferences, as specified in the steps
-    below.
-* `user-agent`: This field can be left as-is, thought if you'd like, you can
-    change it by following
-    [these guidelines](https://github.com/reddit-archive/reddit/wiki/API).
-* `username`: The username for the bot account.
-* `password`: The password for the bot account.
+### Bot account
 
 In order to make a bot, you must first have a bot account. This could be a
 personal account, but it is wise to create a dedicate account for the bot,
@@ -126,32 +113,6 @@ If you have already done this in the past, the `client_id` and `client_secret`
 can be found by navigating to your
 [app preferences](https://www.reddit.com/prefs/apps) and selecting the "edit"
 button for the app under the "developed applications" section.
-
-### pointsbot.ini
-
-For now, these settings are pretty straightforward.
-
-The `Core` section:
-
-* `subreddit_name`: The name of the subreddit to monitor
-* `praw_site_name`: This should probably be left alone; it tells the bot which
-    credentials to use when authenticating with Reddit. It's useful for
-    development and easy testing with different accounts without having to
-    modify values in the code.
-* `database_name`: This is the filepath to the SQLite database file, which ends
-    with the `.db` file extension.
-
-The `Levels` section is used to determine the available user levels and
-corresponding flair texts.
-
-* The key on the left-hand side specifies the title and flair text for the
-    level; the case is ignored, and the text is converted to title case (first
-    letter of each word capitalized, and the rest lowercase).
-* The value on the right-hand side of each line is the total number of points
-    required to reach that level.
-
-The order of these lines doesn't matter; the bot will sort them in order of
-point totals.
 
 ### Make the bot a mod in your subreddit
 

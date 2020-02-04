@@ -32,10 +32,10 @@ database = "pointsbot.db"
 ################################################################################
 
 [credentials]
-client_id = ""
-client_secret = ""
-username = ""
-password = ""
+client_id = "REDACTED"
+client_secret = "REDACTED"
+username = "REDACTED"
+password = "REDACTED"
 
 
 ################################################################################
@@ -54,6 +54,10 @@ password = ""
 #
 # The flair_template_id field is optional, so it may be omitted or left as the
 # empty string, "".
+#
+# Furthermore, the order of these levels does not matter: they will be sorted by
+# point values when the bot is run. However, it may be preferable to order them
+# by point values for readability.
 ################################################################################
 
 [[levels]]
