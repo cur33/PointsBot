@@ -3,9 +3,9 @@ from collections import namedtuple
 ### Data Structures ###
 
 # A (string, int) tuple
-Level = namedtuple('Level', 'name points')
+Level = namedtuple('Level', 'name points flair_template_id')
 
-# A ([Level], Level, Level) tuple;
+# A ([Level], Level, Level) tuple
 # previous can be empty, and exactly one of current and next can be None
 LevelInfo = namedtuple('LevelInfo', 'previous current next')
 
@@ -25,8 +25,7 @@ def user_level_info(points, levels):
     past_levels, cur_level, next_level = [], None, None
 
     for level in levels:
-        lvlname, lvlpoints = level
-        if points < lvlpoints:
+        if points < level.points:
             next_level = level
             break
         if cur_level:

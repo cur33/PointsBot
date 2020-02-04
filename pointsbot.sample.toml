@@ -1,0 +1,72 @@
+################################################################################
+# Core
+# 
+# These are the primary fields needed to run the bot.
+################################################################################
+
+[core]
+# The name of the subreddit to monitor, without the "r/" prefix.
+subreddit = ""
+
+
+################################################################################
+# Filepaths
+#
+# Any filepaths needed by the bot. Can be relative or absolute paths, or just
+# filenames.
+################################################################################
+
+[filepaths]
+# The name of the SQLite database file to use.
+database = "pointsbot.db"
+
+
+################################################################################
+# Reddit Credentials
+# 
+# See the bot documentation for more information about these fields.
+
+# Some of these fields are sensitive, so once these fields are provided, take
+# care not to upload or distribute this file through unsecure channels, or to
+# public sites.
+################################################################################
+
+[credentials]
+client_id = ""
+client_secret = ""
+username = ""
+password = ""
+
+
+################################################################################
+# User Levels
+#
+# These items represent the levels that contributors to the subreddit can
+# attain. To add a level, add another section with the format:
+#
+# [[levels]]
+# name = "<string>"
+# points = <integer>
+# flair_template_id = "<string>"
+#
+# These fields are case-sensitive, so enter the level name exactly as you want
+# it to appear.
+#
+# The flair_template_id field is optional, so it may be omitted or left as the
+# empty string, "".
+################################################################################
+
+[[levels]]
+name = "Level One"
+points = 1
+flair_template_id = ""
+
+[[levels]]
+name = "Level Two"
+points = 25
+flair_template_id = ""
+
+[[levels]]
+name = "Level Three"
+points = 100
+flair_template_id = ""

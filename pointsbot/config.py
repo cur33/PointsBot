@@ -1,53 +1,59 @@
-import configparser
 import os.path
-# from os.path import abspath, dirname, join
+
+import toml
 
 from .level import Level
 
 ### Globals ###
 
 ROOTPATH = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
-CONFIGPATH = os.path.join(ROOTPATH, 'pointsbot.ini')
-
-# TODO add default config values to pass to configparser
+CONFIGPATH = os.path.join(ROOTPATH, 'pointsbot.toml')
 
 ### Classes ###
 
 
 class Config:
 
-    def __init__(self, praw_site_name='', subreddit_name='', database_path='',
-                 levels=None):
-        self.praw_site_name = praw_site_name
-        self.subreddit_name = subreddit_name
+    # Default config vals
+    DEFAULT_DBPATH = 'pointsbot.db'
+
+    def __init__(self, subreddit, client_id, client_secret, username, password,
+                 levels, database_path=DEFAULT_DBPATH):
+        self.subreddit = subreddit
         self.database_path = database_path
-        self.levels = levels if levels is not None else []
+
+        self.client_id = client_id
+        self.client_secret = client_secret
+        self.username = username
+        self.password = password
+
+        self.levels = levels
 
     @classmethod
-    def from_configparser(cls, config):
-        database_path = os.path.join(ROOTPATH, config['Core']['database_name'])
+    def load(cls, filepath=CONFIGPATH):
+        obj = toml.load(filepath)
 
-        # Get the user flair levels in ascending order by point value
         levels = []
-        for opt in config.options('Levels'):
-            name, points = opt.title(), config.getint('Levels', opt)
-            levels.append(Level(name, points))
-        levels.sort(key=lambda lvl: lvl.points)
+        for lvl in obj['levels']:
+            flair_template_id = lvl['flair_template_id']
+            if flair_template_id == "":
+                flair_template_id = None
+            levels.append(Level(lvl['name'], lvl['points'], flair_template_id))
+        levels.sort(key=lambda l: l.points)
+
+        database_path = os.path.join(ROOTPATH, obj['filepaths']['database'])
 
         return cls(
-            praw_site_name=config['Core']['praw_site_name'],
-            subreddit_name=config['Core']['subreddit_name'],
+            obj['core']['subreddit'],
+            obj['credentials']['client_id'],
+            obj['credentials']['client_secret'],
+            obj['credentials']['username'],
+            obj['credentials']['password'],
+            levels,
             database_path=database_path,
-            levels=levels,
         )
 
-
-### Functions ###
-
-
-def load():
-    config = configparser.ConfigParser()
-    config.read(CONFIGPATH)
-    return Config.from_configparser(config)
+    def dump(self, filepath=CONFIGPATH):
+        pass
 
 

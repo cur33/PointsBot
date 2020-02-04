@@ -2,19 +2,22 @@ from . import level
 
 ### Globals ###
 
-EMPTY_SYMBOL  = '\u25AF'   # A same-sized empty box character
-FILLED_SYMBOL = '\u25AE'   # A small filled box character
-EXCESS_SYMBOL = '\u2B51'   # A star character
+# Progress bar symbols
 DIV_SYMBOL    = '|'
+FILLED_SYMBOL = '\u25AE'   # A small filled box character
+EMPTY_SYMBOL  = '\u25AF'   # A same-sized empty box character
 
 # Number of "excess" points should be greater than max level points
-EXCESS_POINTS = 100   # TODO move this to level?
+EXCESS_POINTS = 100              # TODO move this to level?
+EXCESS_SYMBOL = '\u2605'         # A star character
+EXCESS_SYMBOL_TITLE = 'a star'   # Used in comment body
 
 ### Main Functions ###
 
 
 def make(redditor, points, level_info):
     paras = [header()]
+
     if points == 1:
         paras.append(first_greeting(redditor))
         if level_info.current and points == level_info.current.points:
@@ -22,12 +25,22 @@ def make(redditor, points, level_info):
                                   level_info.current.name,
                                   tag_user=False))
     elif points > 1:
+        user_already_tagged = False
+
         if level_info.current and points == level_info.current.points:
-            paras.append(level_up(redditor, level_info.current.name))
-        elif not level_info.next and points > 0 and points % EXCESS_POINTS == 0:
-            first_star = (points == EXCESS_POINTS)
-            paras.append(new_star(redditor, first_star))
-        else:
+            paras.append(level_up(redditor,
+                                  level_info.current.name,
+                                  tag_user=(not user_already_tagged)))
+            user_already_tagged = True
+
+        if points % EXCESS_POINTS == 0:
+            first_excess = (points == EXCESS_POINTS)
+            paras.append(new_excess_symbol(redditor,
+                                           first_excess=first_excess,
+                                           tag_user=(not user_already_tagged)))
+            user_already_tagged = True
+
+        if not user_already_tagged:
             paras.append(normal_greeting(redditor))
 
     paras.append(points_status(redditor, points, level_info))
@@ -43,9 +56,8 @@ def header():
 
 
 def first_greeting(redditor):
-    msg = (f'Congrats, u/{redditor.name}, you have received a point! Points '
+    return (f'Congrats, u/{redditor.name}, you have received a point! Points '
            'help you "level up" to the next user flair!')
-    return msg
 
 
 def normal_greeting(redditor):
@@ -58,11 +70,12 @@ def level_up(redditor, level_name, tag_user=True):
             'updated accordingly.')
 
 
-def new_star(redditor, first_star):
-    num_stars_msg = '' if first_star else 'another '
-    return (f'Congrats u/{redditor.name} on getting '
-            '{num_stars_msg}{EXCESS_POINTS} points! They are shown as a star '
-            'in your progress bar.')
+def new_excess_symbol(redditor, first_excess=True, tag_user=True):
+    # Surrounding spaces for simplicity
+    tag = f' u/{redditor.name} ' if tag_user else ' '
+    num_stars_prefix = ' another ' if not first_excess else ' '
+    return (f'Congrats{tag}on getting{num_stars_prefix}{EXCESS_POINTS} points! '
+            f'They are shown as {EXCESS_SYMBOL_TITLE} in your progress bar.')
 
 
 def points_status(redditor, points, level_info):

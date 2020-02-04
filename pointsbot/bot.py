@@ -4,22 +4,35 @@ import praw
 
 from . import config, database, level, reply
 
+### Globals ###
+
+USER_AGENT = 'PointsBot (by u/GlipGlorp7)'
+
+TEST_COMMENTS = False
+
 ### Main Function ###
 
 
 def run():
-    cfg = config.load()
+    cfg = config.Config.load()
     levels = cfg.levels
 
-    # Connect to Reddit
-    reddit = praw.Reddit(site_name=cfg.praw_site_name)
-    subreddit = reddit.subreddit(cfg.subreddit_name)
+    reddit = praw.Reddit(client_id=cfg.client_id,
+                         client_secret=cfg.client_secret,
+                         username=cfg.username,
+                         password=cfg.password,
+                         user_agent=USER_AGENT)
+    subreddit = reddit.subreddit(cfg.subreddit)
 
     print_level(0, f'Connected to Reddit as {reddit.user.me()}')
     print_level(1, f'Read-only? {reddit.read_only}')
     print_level(0, f'Watching subreddit {subreddit.title}')
     is_mod = bool(subreddit.moderator(redditor=reddit.user.me()))
     print_level(1, f'Is mod? {is_mod}')
+
+    if TEST_COMMENTS:
+        make_comments(subreddit, levels)
+        return
 
     db = database.Database(cfg.database_path)
 
@@ -28,8 +41,8 @@ def run():
     solved_pat = re.compile('![Ss]olved')
 
     # Monitor new comments for confirmed solutions
-    # Passing pause_after=0 will bypass the internal exponential delay, but have
-    # to check if any comments are returned with each query
+    # Passing pause_after=0 will bypass the internal exponential delay; instead,
+    # have to check if any comments are returned with each query
     for comm in subreddit.stream.comments(skip_existing=True, pause_after=0):
         if comm is None:
             continue
@@ -54,24 +67,22 @@ def run():
 
             level_info = level.user_level_info(points, levels)
 
-            # TODO move comment to the end and use some things, e.g. whether
-            # flair is set, when building comment (to avoid duplicate logic)
-
             # Reply to the comment marking the submission as solved
             reply_body = reply.make(solver, points, level_info)
-            # reply_body = reply.make(solver, points, levels)
             print_level(1, f'Replying with: "{reply_body}"')
             comm.reply(reply_body)
 
             # Check if (non-mod) user flair should be updated to new level
-            if level_info.current and level_info.current.points == points:
-                print_level(1, f'User reached level: {level_info.current.name}')
+            lvl = level_info.current
+            if lvl and lvl.points == points:
+                print_level(1, f'User reached level: {lvl.name}')
                 if not subreddit.moderator(redditor=solver):
                     print_level(2, 'Setting flair')
-                    print_level(3, f'Flair text: {level_info.current.name}')
-                    # TODO
-                    # print_level(3, f'Flair template ID: {}')
-                    subreddit.flair.set(solver, text=levelname)
+                    print_level(3, f'Flair text: {lvl.name}')
+                    print_level(3, f'Flair template ID: {lvl.flair_template_id}')
+                    subreddit.flair.set(solver,
+                                        text=lvl.name,
+                                        flair_template_id=lvl.flair_template_id)
                 else:
                     print_level(2, 'Solver is mod; don\'t alter flair')
         else:
@@ -108,16 +119,6 @@ def is_first_solution(solved_comment, solved_pattern):
     return True
 
 
-def find_solver(comment):
-    # TODO
-    pass
-
-
-def make_flair(points, levels):
-    # TODO
-    pass
-
-
 ### Debugging & Logging ###
 
 
@@ -135,20 +136,7 @@ def print_solution_info(comm):
     print_level(3, f'Body:   {comm.body}')
 
 
-def make_comments():
-    cfg = config.load()
-    levels = cfg.levels
-
-    # Connect to Reddit
-    reddit = praw.Reddit(site_name=cfg.praw_site_name)
-    subreddit = reddit.subreddit(cfg.subreddit_name)
-
-    print_level(0, f'Connected to Reddit as {reddit.user.me()}')
-    print_level(1, f'Read-only? {reddit.read_only}')
-    print_level(0, f'Watching subreddit {subreddit.title}')
-    is_mod = bool(subreddit.moderator(redditor=reddit.user.me()))
-    print_level(1, f'Is mod? {is_mod}')
-
+def make_comments(subreddit, levels):
     testpoints = [1, 3, 5, 10, 15, 30, 45, 75] + list(range(100, 551, 50))
 
     for sub in subreddit.new():

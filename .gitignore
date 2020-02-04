@@ -1,5 +1,6 @@
 praw.ini
 pointsbot.ini
+pointsbot.toml
 
 *.db
 *.pyc
