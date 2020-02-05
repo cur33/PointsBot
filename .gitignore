@@ -4,6 +4,6 @@
 *.pyc
 __pycache__
 
-docs/
+*.html
 *.out
 *.swp
