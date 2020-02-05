@@ -19,7 +19,8 @@ TEST_COMMENTS = False
 
 
 def run():
-    cfg = config.Config.load()
+    #cfg = config.Config.load()
+    cfg = config.load()
     levels = cfg.levels
 
     reddit = praw.Reddit(client_id=cfg.client_id,

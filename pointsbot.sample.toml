@@ -17,8 +17,9 @@ subreddit = ""
 ################################################################################
 
 [filepaths]
-# The name of the SQLite database file to use.
-database = "pointsbot.db"
+# The name of the SQLite database file to use. This value is optional; if not
+# specified, a default filepath will be used.
+database = ""
 
 
 ################################################################################
