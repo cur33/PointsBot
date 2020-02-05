@@ -60,19 +60,26 @@ To uninstall (i.e. delete the project's virtual environment and the installed
 python packages), navigate to the project root directory and instead run
 `pipenv --rm`.
 
+## Usage
+
+Once you have followed the instructions in the [Setup](#setup) section below,
+the simplest way to run the bot is to navigate to the project root directory and
+run:
+
+```bash
+pipenv run python -m pointsbot
+```
+
 ## Setup
 
 ### Configuration file
 
-The bot can be configured by changing or adding to the values in the
-configuration file, `pointsbot.toml`.
-
-You shouldn't have to worry about it, but if you need it, information on the
-TOML syntax used for the file can be found on
-[Github](https://github.com/toml-lang/toml).
+The bot stores any necessary data, including configuration, under the
+`.pointsbot` directory in your home directory.
 
 If this is your first time running the bot, you will need to copy
-`pointsbot.sample.toml` to a new file called `pointsbot.toml`. Any instances of
+`pointsbot.sample.toml` to a new file called `.pointsbot\pointsbot.toml`,
+located in the `.pointsbot` directory mentioned above. Any instances of
 the word "REDACTED" should be replaced with the appropriate values; other values
 should work as-is, but can be changed as needed.
 
@@ -84,11 +91,14 @@ code repository.
 More information on the specific config options can be found in the comments in
 the sample config file.
 
+You shouldn't have to worry about it, but if you need it, information on the
+TOML syntax used for the file can be found on [Github](https://github.com/toml-lang/toml).
+
 ### Bot account
 
 In order to make a bot, you must first have a bot account. This could be a
-personal account, but it is wise to create a dedicate account for the bot,
-especially one with the word "bot" somewhere in the name.
+personal account, but it is recommended to create a dedicated account for the
+bot, especially one with the word "bot" somewhere in the name.
 
 Once you have that, you can create a Reddit app for the bot. This is needed for
 authenticating with Reddit.
@@ -99,15 +109,15 @@ authenticating with Reddit.
    username.
 4. Select the "script" radio button.
 5. Provide a brief description.
-6. For the "about url", you can provide a link to this Github repository:
+6. For the "about url", you can provide a link to the Github repository:
     https://github.com/cur33/PointsBot
 7. Since it is unused, the "redirect uri" can be set to something like:
     http://www.example.com/unused/redirect/uri
 8. Select "create app".
 
-Now you should be redirected to a page which contains the credentials you will
-need; under the name of the bot is the unlabeled `client_id`, and below that
-with the label "secret" is the `client_secret`.
+You should be redirected to a page which contains the credentials you will need;
+under the name of the bot is the unlabeled `client_id`, and below that with the
+label "secret" is the `client_secret`.
 
 If you have already done this in the past, the `client_id` and `client_secret`
 can be found by navigating to your
@@ -117,24 +127,15 @@ button for the app under the "developed applications" section.
 ### Make the bot a mod in your subreddit
 
 Some of the bot's behaviors, e.g. altering redditor flairs, require moderator
-permissions. It should require just the "Flair" and "Posts" permissions, so you
-don't need to grant it full permissions.
-
-## Usage
-
-The simplest way to run the bot is to navigate to the project root directory and
-run:
-
-```bash
-pipenv run python -m pointsbot
-```
+permissions. It should require just the "Flair" and "Posts" permissions and
+perhaps the "Access" permission, so you don't need to grant it full permissions.
 
 ## Terms of Use for a bot for Reddit
 
 Since this is an open-source, unmonetized program, it should be considered
 non-commercial, and is thus allowed to use the Reddit API without registration.
-However, this bot is provided under the permissive MIT license. Therefore, if
-your use of the bot becomes commercial, you should
+However, this bot is provided under the permissive MIT license, so if your use
+of the bot becomes commercial, you should
 [read the Reddit API terms and register here](https://www.reddit.com/wiki/api).
 
 ## License
