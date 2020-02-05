@@ -8,6 +8,11 @@ from . import config, database, level, reply
 
 USER_AGENT = 'PointsBot (by u/GlipGlorp7)'
 
+# The pattern that determines whether a post is marked as solved
+# Could also just use re.IGNORECASE flag
+SOLVED_PAT = re.compile('![Ss]olved')
+MOD_SOLVED_PAT = re.compile('/[Ss]olved')
+
 TEST_COMMENTS = False
 
 ### Main Function ###
@@ -38,7 +43,7 @@ def run():
 
     # The pattern that determines whether a post is marked as solved
     # Could also just use re.IGNORECASE flag
-    solved_pat = re.compile('![Ss]olved')
+    # solved_pat = re.compile('![Ss]olved')
 
     # Monitor new comments for confirmed solutions
     # Passing pause_after=0 will bypass the internal exponential delay; instead,
@@ -50,8 +55,10 @@ def run():
         print_level(0, '\nFound comment')
         print_level(1, f'Comment text: "{comm.body}"')
 
-        if marks_as_solved(comm, solved_pat):
-            if not is_first_solution(comm, solved_pat):
+        # if marks_as_solved(comm, solved_pat):
+        if marks_as_solved(comm):
+            # if not is_first_solution(comm, solved_pat):
+            if not is_first_solution(comm):
                 # Skip this "!solved" comment and wait for the next
                 print_level(1, 'Not the first solution')
                 continue
@@ -92,17 +99,31 @@ def run():
 ### Reddit Comment Functions ###
 
 
-def marks_as_solved(comment, solved_pattern):
+# def marks_as_solved(comment, solved_pattern):
+def marks_as_solved(comment):
     '''Return True if the comment meets the criteria for marking the submission
     as solved, False otherwise.
     '''
+    op_resp_to_solver = (comment.is_submitter
+                         and comment.parent() != comment.submission
+                         and not comment.parent().is_submitter
+                         and SOLVED_PAT.search(comment.body))
+
+    mod_resp_to_solver = (comment.subreddit.moderator(redditor=comment.author)
+                          and MOD_SOLVED_PAT.search(comment.body))
+
+    return not comment.is_root and (op_resp_to_solver or mod_resp_to_solver)
+
+    """
     return (not comment.is_root
             and comment.is_submitter
             and not comment.parent().is_submitter
             and solved_pattern.search(comment.body))
+    """
 
 
-def is_first_solution(solved_comment, solved_pattern):
+# def is_first_solution(solved_comment, solved_pattern):
+def is_first_solution(solved_comment):
     # Retrieve any comments hidden by "more comments"
     # Passing limit=0 will replace all "more comments"
     submission = solved_comment.submission
@@ -111,7 +132,8 @@ def is_first_solution(solved_comment, solved_pattern):
     # Search the flattened comments tree
     for comment in submission.comments.list():
         if (comment.id != solved_comment.id
-                and marks_as_solved(comment, solved_pattern)
+                # and marks_as_solved(comment, solved_pattern)
+                and marks_as_solved(comment)
                 and comment.created_utc < solved_comment.created_utc):
             # There is an earlier comment for the same submission
             # already marked as a solution by the OP
