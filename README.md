@@ -4,8 +4,8 @@
 
 * [Description](#description)
 * [Installation](#installation)
-* [Setup](#setup)
 * [Usage](#usage)
+* [Setup](#setup)
 * [Terms of Use for a bot for Reddit](#terms-of-use-for-a-bot-for-reddit)
 * [License](#license)
 
