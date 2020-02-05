@@ -44,6 +44,7 @@ def make(redditor, points, level_info):
             paras.append(normal_greeting(redditor))
 
     paras.append(points_status(redditor, points, level_info))
+    paras.append(divider())
     paras.append(footer())
     return '\n\n'.join(paras)
 
@@ -122,6 +123,11 @@ def progress_bar(points, level_info):
         bar = ''.join(bar)
 
     return f'[{bar}]'
+
+
+def divider():
+    '''A single dividing line in Markdown.'''
+    return '***'
 
 
 def footer():

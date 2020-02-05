@@ -1,6 +1,4 @@
-praw.ini
-pointsbot.ini
-pointsbot.toml
+*pointsbot.toml
 
 *.db
 *.pyc
