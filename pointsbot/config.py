@@ -23,7 +23,6 @@ SAMPLEPATH = os.path.abspath(os.path.join(os.path.dirname(__file__),
 class Config:
 
     # Default config vals
-    # DEFAULT_DBPATH = os.path.join(DATADIR, 'pointsbot.db')
     DEFAULT_DBNAME = 'pointsbot.db'
 
     def __init__(self, filepath, subreddit, client_id, client_secret, username,
@@ -33,6 +32,8 @@ class Config:
 
         if not database_path:
             database_path = os.path.join(self._dirname, self.DEFAULT_DBNAME)
+        elif os.path.isdir(database_path):
+            database_path = os.path.join(database_path, self.DEFAULT_DBNAME)
         self.database_path = database_path
 
         self.subreddit = subreddit
@@ -57,7 +58,9 @@ class Config:
             levels.append(Level(lvl['name'], lvl['points'], flair_template_id))
         levels.sort(key=lambda l: l.points)
 
-        # database_path = os.path.join(DATADIR, obj['filepaths']['database'])
+        dbpath = obj['filepaths']['database']
+        if dbpath:
+            dbpath = os.path.abspath(os.path.expandvars(os.path.expanduser(dbpath)))
 
         return cls(
             filepath,
@@ -67,8 +70,7 @@ class Config:
             obj['credentials']['username'],
             obj['credentials']['password'],
             levels,
-            database_path=obj['filepaths']['database'],
-            # database_path=database_path,
+            database_path=dbpath,
         )
 
     def save(self):
@@ -95,11 +97,6 @@ def load(filepath=CONFIGPATH):
         datadir = os.path.dirname(filepath)
         if not os.path.exists(datadir):
             os.makedirs(datadir)
-
-        # with open(SAMPLEPATH) as fin:
-            # with open(filepath, 'w') as fout:
-                # fout.write(fin.read())
-
         interactive_config(filepath)
 
     return Config.from_toml(filepath)
@@ -133,7 +130,7 @@ def interactive_config(dest):
     while add_another_level:
         level = {}
         level['name'] = input('\nLevel name? ')
-        level['points'] = input('Level points? ')
+        level['points'] = int(input('Level points? '))
         level['flair_template_id'] = input('Flair template ID? (optional) ')
         configvals['levels'].append(level)
 
@@ -142,6 +139,6 @@ def interactive_config(dest):
 
     with open(dest, 'w') as f:
         toml.dump(configvals, f)
-    print(f'\nConfig settings saved to {dest}')
+    print('#' * 80 + f'\nConfig settings saved to {dest}\n' + '#' * 80)
 
 

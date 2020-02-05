@@ -10,6 +10,8 @@
     - [ ] Create a GUI for configuring and running the bot, and performing other jobs
         like adding or subtracting points for specific redditors
     - [ ] Check for updates in the Github repo and prompt user to update
+        - It turns out that this might only be possible with a Github user
+            account to authenticate with the API.
         - Github API overview:
             - https://developer.github.com/v3/
             - https://developer.github.com/v4/
@@ -56,6 +58,8 @@
 
 ### config.py
 
+* [ ] Switch from `toml` package to `tomlkit` package
+    - Preserves style, comments, etc.
 * [X] Change from `ini` to `toml `
 * [X] Consolidate `pointsbot.ini` and `praw.ini` into a single config file.
 * [X] Add option for flair_template_id
