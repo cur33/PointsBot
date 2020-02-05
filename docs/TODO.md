@@ -10,18 +10,19 @@
     - [ ] Create a GUI for configuring and running the bot, and performing other jobs
         like adding or subtracting points for specific redditors
     - [ ] Check for updates in the Github repo and prompt user to update
-        - It turns out that this might only be possible with a Github user
-            account to authenticate with the API.
         - Github API overview:
             - https://developer.github.com/v3/
             - https://developer.github.com/v4/
+                - It turns out that v4 might only be possible with a Github user
+                    account to authenticate with the API.
         - Useful links:
             - https://developer.github.com/v3/repos/branches/#get-branch
+            - https://developer.github.com/v3/repos/contents/#get-archive-link
             - https://developer.github.com/v3/repos/commits/
             - https://developer.github.com/v3/repos/releases/
-            - https://developer.github.com/v3/repos/hooks/
         - Webhooks:
             - https://developer.github.com/webhooks/
+            - https://developer.github.com/v3/repos/hooks/
             - https://developer.github.com/v3/activity/events/types/#pushevent
 * [ ] Determine whether and how to check "![Ss]olved" comments have been later
     edited to remove the "![Ss]olved" string, and whether and how to remove or
