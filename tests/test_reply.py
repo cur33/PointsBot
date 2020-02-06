@@ -16,15 +16,15 @@ def leftpad(msg, num_indents=1):
 ### Tests ###
 
 levels = [
-    pointsbot.level.Level('Novice', 1),
-    pointsbot.level.Level('Apprentice', 5),
-    pointsbot.level.Level('Journeyman', 15),
-    pointsbot.level.Level('Expert', 45),
-    pointsbot.level.Level('Master I', 100),
-    pointsbot.level.Level('Master II', 200),
-    pointsbot.level.Level('Master III', 300),
-    pointsbot.level.Level('Master IV', 400),
-    pointsbot.level.Level('Master V', 500),
+    pointsbot.level.Level('Novice', 1, ''),
+    pointsbot.level.Level('Apprentice', 5, ''),
+    pointsbot.level.Level('Journeyman', 15, ''),
+    pointsbot.level.Level('Expert', 45, ''),
+    pointsbot.level.Level('Master I', 100, ''),
+    pointsbot.level.Level('Master II', 200, ''),
+    pointsbot.level.Level('Master III', 300, ''),
+    pointsbot.level.Level('Master IV', 400, ''),
+    pointsbot.level.Level('Master V', 500, ''),
 ]
 
 testredditors = [MockRedditor('1', 'Tim_the_Sorcerer')]

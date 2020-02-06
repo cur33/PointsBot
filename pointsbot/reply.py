@@ -131,8 +131,9 @@ def divider():
 
 
 def footer():
-    return ('^(This bot is written and maintained by GlipGlorp7 '
-            '| Learn more and view the source code on '
-            '[Github](https://github.com/cur33/PointsBot))')
+    return ('^(Bot maintained by GlipGlorp7 '
+            '| [Scoreboard](https://points.minecrafthelp.co.uk) '
+            '| [Feedback](https://forms.gle/m94aGjFQwGopqQ836) '
+            '| [Source Code](https://github.com/cur33/PointsBot))')
 
 
