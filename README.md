@@ -130,7 +130,7 @@ Some of the bot's behaviors, e.g. altering redditor flairs, require moderator
 permissions. It should require just the "Flair" and "Posts" permissions and
 perhaps the "Access" permission, so you don't need to grant it full permissions.
 
-## Terms of Use for a bot for Reddit
+## Terms of use for a bot for Reddit
 
 Since this is an open-source, unmonetized program, it should be considered
 non-commercial, and is thus allowed to use the Reddit API without registration.
