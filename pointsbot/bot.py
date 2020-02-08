@@ -13,8 +13,6 @@ USER_AGENT = 'PointsBot (by u/GlipGlorp7)'
 SOLVED_PAT = re.compile('![Ss]olved')
 MOD_SOLVED_PAT = re.compile('/[Ss]olved')
 
-TEST_COMMENTS = False
-
 ### Main Function ###
 
 
@@ -35,10 +33,6 @@ def run():
     is_mod = bool(subreddit.moderator(redditor=reddit.user.me()))
     print_level(1, f'Is mod? {is_mod}')
 
-    if TEST_COMMENTS:
-        make_comments(subreddit, levels)
-        return
-
     db = database.Database(cfg.database_path)
 
     # Monitor new comments for confirmed solutions
@@ -51,43 +45,46 @@ def run():
         print_level(0, '\nFound comment')
         print_level(1, f'Comment text: "{comm.body}"')
 
-        if marks_as_solved(comm):
-            if not is_first_solution(comm):
-                # Skip this "!solved" comment and wait for the next
-                print_level(1, 'Not the first solution')
-                continue
+        if not marks_as_solved(comm):
+            print_level(1, 'Not a "![Ss]olved" comment')
+            continue
 
-            print_level(1, 'This is the first solution')
-            print_solution_info(comm)
+        if is_mod_comment(comm):
+            print_level(1, 'Mod comment')
+        elif not is_first_solution(comm):
+            # Skip this "!solved" comment and wait for the next
+            print_level(1, 'Not the first solution')
+            continue
 
-            solver = comm.parent().author
-            print_level(1, f'Adding point for {solver.name}')
-            db.add_point(solver)
-            points = db.get_points(solver)
-            print_level(1, f'Points for {solver.name}: {points}')
+        print_level(1, 'This is the first solution found')
+        print_solution_info(comm)
 
-            level_info = level.user_level_info(points, levels)
+        solver = find_solver(comm)
+        db.add_point(solver)
+        print_level(1, f'Added point for {solver.name}')
 
-            # Reply to the comment marking the submission as solved
-            reply_body = reply.make(solver, points, level_info)
-            print_level(1, f'Replying with: "{reply_body}"')
-            comm.reply(reply_body)
+        points = db.get_points(solver)
+        print_level(1, f'Total points for {solver.name}: {points}')
+        level_info = level.user_level_info(points, levels)
 
-            # Check if (non-mod) user flair should be updated to new level
-            lvl = level_info.current
-            if lvl and lvl.points == points:
-                print_level(1, f'User reached level: {lvl.name}')
-                if not subreddit.moderator(redditor=solver):
-                    print_level(2, 'Setting flair')
-                    print_level(3, f'Flair text: {lvl.name}')
-                    print_level(3, f'Flair template ID: {lvl.flair_template_id}')
-                    subreddit.flair.set(solver,
-                                        text=lvl.name,
-                                        flair_template_id=lvl.flair_template_id)
-                else:
-                    print_level(2, 'Solver is mod; don\'t alter flair')
-        else:
-            print_level(1, 'Not a "!solved" comment')
+        # Reply to the comment marking the submission as solved
+        reply_body = reply.make(solver, points, level_info)
+        comm.reply(reply_body)
+        print_level(1, f'Replied to comment with: "{reply_body}"')
+
+        # Check if (non-mod) user flair should be updated to new level
+        lvl = level_info.current
+        if lvl and lvl.points == points:
+            print_level(1, f'User reached level: {lvl.name}')
+            if not subreddit.moderator(redditor=solver):
+                print_level(2, 'Setting flair')
+                print_level(3, f'Flair text: {lvl.name}')
+                print_level(3, f'Flair template ID: {lvl.flair_template_id}')
+                subreddit.flair.set(solver,
+                                    text=lvl.name,
+                                    flair_template_id=lvl.flair_template_id)
+            else:
+                print_level(2, 'Solver is mod; don\'t alter flair')
 
 
 ### Reddit Comment Functions ###
@@ -110,9 +107,13 @@ def marks_as_solved(comment):
     return op_resp_to_solver or mod_resp_to_solver
 
 
+def is_mod_comment(comment):
+    return comment.subreddit.moderator(redditor=comment.author)
+
+
 def is_first_solution(solved_comment):
-    # Retrieve any comments hidden by "more comments"
-    # Passing limit=0 will replace all "more comments"
+    '''Return True if this solved comment is the first, False otherwise.'''
+    # Retrieve any comments hidden by "more comments" by passing limit=0
     submission = solved_comment.submission
     submission.comments.replace_more(limit=0)
 
@@ -125,6 +126,10 @@ def is_first_solution(solved_comment):
             # already marked as a solution by the OP
             return False
     return True
+
+
+def find_solver(solved_comment):
+    return solved_comment.parent().author
 
 
 ### Debugging & Logging ###
@@ -142,24 +147,5 @@ def print_solution_info(comm):
     print_level(2, '"Solved" comment:')
     print_level(3, f'Author: {comm.author.name}')
     print_level(3, f'Body:   {comm.body}')
-
-
-def make_comments(subreddit, levels):
-    testpoints = [1, 3, 5, 10, 15, 30, 45, 75] + list(range(100, 551, 50))
-
-    for sub in subreddit.new():
-        if sub.title == 'Testing comment scenarios':
-            redditor = sub.author
-            for points in testpoints:
-                body = f'Solver: {redditor}\n\nTotal points after solving: {points}'
-                print_level(0, body)
-                comm = sub.reply(body)
-                if comm:
-                    level_info = level.user_level_info(points, levels)
-                    body = reply.make(redditor, points, level_info)
-                    comm.reply(body)
-                else:
-                    print_level(1, 'ERROR: Unable to comment')
-            break
 
 

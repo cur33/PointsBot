@@ -13,6 +13,25 @@ def leftpad(msg, num_indents=1):
     return '\n'.join([('\t' * num_indents + l) for l in msg.split('\n')])
 
 
+def make_comments(subreddit, levels):
+    testpoints = [1, 3, 5, 10, 15, 30, 45, 75] + list(range(100, 551, 50))
+
+    for sub in subreddit.new():
+        if sub.title == 'Testing comment scenarios':
+            redditor = sub.author
+            for points in testpoints:
+                body = f'Solver: {redditor}\n\nTotal points after solving: {points}'
+                print_level(0, body)
+                comm = sub.reply(body)
+                if comm:
+                    level_info = level.user_level_info(points, levels)
+                    body = reply.make(redditor, points, level_info)
+                    comm.reply(body)
+                else:
+                    print_level(1, 'ERROR: Unable to comment')
+            break
+
+
 ### Tests ###
 
 levels = [

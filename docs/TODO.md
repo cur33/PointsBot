@@ -20,6 +20,7 @@
             - https://developer.github.com/v3/repos/contents/#get-archive-link
             - https://developer.github.com/v3/repos/commits/
             - https://developer.github.com/v3/repos/releases/
+            - https://developer.github.com/v3/#timezones
         - Webhooks:
             - https://developer.github.com/webhooks/
             - https://developer.github.com/v3/repos/hooks/
@@ -40,6 +41,7 @@
 
 ### bot.py
 
+* [ ] Allow mods to use "/[Ss]olved" in any context
 * [ ] Allow mods and/or bot owner to add or remove points from specific users
 * [ ] Make the algorithm for determining the problem solver more sophisticated
     - e.g. check entire comment tree instead of just ignoring if the OP also
@@ -79,18 +81,19 @@
 
 ### database.py
 
+* [ ] Store date for each "!solved" comment
 * [ ] Possibly refactor for a datastore type thing instead of database
     - Maybe even make models like Redditor to combine data storage/access with
         logic, e.g. determining current level
 
 ### reply.py
 
-* [ ] For the footer section of the reply comment regarding the bot, could have the
+* [X] Fix progress bar
+* ~~For the footer section of the reply comment regarding the bot, could have the
     bot make a post on its account explaining itself, and link to that (and then
     also link to the source code separately, and perhaps in that post, too).
     Could even have the bot make this post automatically if it doesn't have a
-    link to the post in its config, and then store the link for future use.
-* [X] Fix progress bar
+    link to the post in its config, and then store the link for future use.~~
 
 ## Ideas
 
