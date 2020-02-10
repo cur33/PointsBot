@@ -19,25 +19,36 @@ MOD_SOLVED_PAT = re.compile('/[Ss]olved')
 def run():
     cfg = config.load()
     levels = cfg.levels
-
-    reddit = praw.Reddit(client_id=cfg.client_id,
-                         client_secret=cfg.client_secret,
-                         username=cfg.username,
-                         password=cfg.password,
-                         user_agent=USER_AGENT)
-    subreddit = reddit.subreddit(cfg.subreddit)
-
-    print_level(0, f'Connected to Reddit as {reddit.user.me()}')
-    print_level(1, f'Read-only? {reddit.read_only}')
-    print_level(0, f'Watching subreddit {subreddit.title}')
-    is_mod = bool(subreddit.moderator(redditor=reddit.user.me()))
-    print_level(1, f'Is mod? {is_mod}')
-
     db = database.Database(cfg.database_path)
 
-    # Monitor new comments for confirmed solutions
-    # Passing pause_after=0 will bypass the internal exponential delay; instead,
-    # have to check if any comments are returned with each query
+    # Run indefinitely, reconnecting any time a connection is lost
+    while True:
+        try:
+            reddit = praw.Reddit(client_id=cfg.client_id,
+                                 client_secret=cfg.client_secret,
+                                 username=cfg.username,
+                                 password=cfg.password,
+                                 user_agent=USER_AGENT)
+            subreddit = reddit.subreddit(cfg.subreddit)
+
+            print_level(0, f'Connected to Reddit as {reddit.user.me()}')
+            print_level(1, f'Read-only? {reddit.read_only}')
+            print_level(0, f'Watching subreddit {subreddit.title}')
+            is_mod = bool(subreddit.moderator(redditor=reddit.user.me()))
+            print_level(1, f'Is mod? {is_mod}')
+
+            monitor_comments(subreddit, db)
+        # Ignoring other potential exceptions for now, since we may not be able
+        # to recover from them as well as from this one
+        except prawcore.exceptions.ServerError as e:
+            print('Lost connection to Reddit; attempting to reconnect....')
+
+
+def monitor_comments(subreddit, db):
+    """Monitor new comments in the subreddit, looking for confirmed solutions.
+    """
+    # Passing pause_after=0 will bypass the internal exponential delay, but have
+    # to check if any comments are returned with each query
     for comm in subreddit.stream.comments(skip_existing=True, pause_after=0):
         if comm is None:
             continue
