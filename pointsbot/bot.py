@@ -1,6 +1,7 @@
 import re
 
 import praw
+import prawcore
 
 from . import config, database, level, reply
 
@@ -40,6 +41,8 @@ def run():
             monitor_comments(subreddit, db)
         # Ignoring other potential exceptions for now, since we may not be able
         # to recover from them as well as from this one
+        except prawcore.exceptions.RequestException as e:
+            print('Unable to connect; attempting again....')
         except prawcore.exceptions.ServerError as e:
             print('Lost connection to Reddit; attempting to reconnect....')
 
