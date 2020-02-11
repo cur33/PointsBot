@@ -40,7 +40,7 @@ class Database:
             name TEXT UNIQUE NOT NULL,
             points INTEGER DEFAULT 0
         )
-        '''
+    '''
 
     def __init__(self, dbpath):
         self.path = dbpath
@@ -59,19 +59,55 @@ class Database:
         insert_stmt = '''
             INSERT OR IGNORE INTO redditor_points (id, name)
             VALUES (:id, :name)
-            '''
+        '''
         self.cursor.execute(insert_stmt, {'id': redditor.id, 'name': redditor.name})
         return self.cursor.rowcount
 
-    @transaction
+#   @transaction
+#   def add_point(self, redditor):
+#       points = self.get_points(redditor, add_if_none=True)
+#       params = {'id': redditor.id, 'name': redditor.name, 'points': points + 1}
+#       update_stmt = '''
+#           UPDATE redditor_points
+#           SET points = :points
+#           WHERE id = :id AND name = :name
+#           '''
+#       self.cursor.execute(update_stmt, params)
+#       return self.cursor.rowcount
+
+#   @transaction
+#   def remove_point(self, redditor):
+#       points = self.get_points(redditor, add_if_none=True)
+#       params = {'id': redditor.id, 'name': redditor.name, 'points': points - 1}
+#       update_stmt = '''
+#           UPDATE redditor_points
+#           SET points = :points
+#           WHERE id = :id AND name = :name
+#           '''
+#       self.cursor.execute(update_stmt, params)
+#       return self.cursor.rowcount
+
     def add_point(self, redditor):
+        return self._update_points(redditor, 1)
+
+    def remove_point(self, redditor):
+        return self._update_points(redditor, -1)
+
+    @transaction
+    def _update_points(self, redditor, points_modifier):
+        """points_modifier is positive to add points, negative to subtract."""
         points = self.get_points(redditor, add_if_none=True)
-        params = {'id': redditor.id, 'name': redditor.name, 'points': points + 1}
+        # params = {'id': redditor.id, 'name': redditor.name, 'points': points - 1}
+        params = {
+            'id': redditor.id,
+            'name': redditor.name,
+            'points': points + points_modifier,
+        }
         update_stmt = '''
             UPDATE redditor_points
             SET points = :points
             WHERE id = :id AND name = :name
-            '''
+        '''
         self.cursor.execute(update_stmt, params)
         return self.cursor.rowcount
 
@@ -82,7 +118,7 @@ class Database:
             SELECT points
             FROM redditor_points
             WHERE id = :id AND name = :name
-            '''
+        '''
         self.cursor.execute(select_stmt, params)
         row = self.cursor.fetchone()   # TODO check if more than one row
         if row:

@@ -38,7 +38,7 @@ def run():
             is_mod = bool(subreddit.moderator(redditor=reddit.user.me()))
             print_level(1, f'Is mod? {is_mod}')
 
-            monitor_comments(subreddit, db)
+            monitor_comments(subreddit, db, levels)
         # Ignoring other potential exceptions for now, since we may not be able
         # to recover from them as well as from this one
         except prawcore.exceptions.RequestException as e:
@@ -47,9 +47,8 @@ def run():
             print('Lost connection to Reddit; attempting to reconnect....')
 
 
-def monitor_comments(subreddit, db):
-    """Monitor new comments in the subreddit, looking for confirmed solutions.
-    """
+def monitor_comments(subreddit, db, levels):
+    """Monitor new comments in the subreddit, looking for confirmed solutions."""
     # Passing pause_after=0 will bypass the internal exponential delay, but have
     # to check if any comments are returned with each query
     for comm in subreddit.stream.comments(skip_existing=True, pause_after=0):
@@ -83,8 +82,16 @@ def monitor_comments(subreddit, db):
 
         # Reply to the comment marking the submission as solved
         reply_body = reply.make(solver, points, level_info)
-        comm.reply(reply_body)
-        print_level(1, f'Replied to comment with: "{reply_body}"')
+        try:
+            comm.reply(reply_body)
+            print_level(1, f'Replied to comment with: "{reply_body}"')
+        except praw.exceptions.APIException as e:
+            print_level(1, 'Unable to reply to comment')
+            print_level(2, f'{e}')
+            db.remove_point(solver)
+            print_level(1, f'Removed point awarded to {solver.name}')
+            print_level(1, 'Skipping comment')
+            continue
 
         # Check if (non-mod) user flair should be updated to new level
         lvl = level_info.current
@@ -105,9 +112,9 @@ def monitor_comments(subreddit, db):
 
 
 def marks_as_solved(comment):
-    '''Return True if the comment meets the criteria for marking the submission
+    """Return True if the comment meets the criteria for marking the submission
     as solved, False otherwise.
-    '''
+    """
     op_resp_to_solver = (not comment.is_root
                          and comment.is_submitter
                          and not comment.parent().is_submitter
@@ -126,7 +133,7 @@ def is_mod_comment(comment):
 
 
 def is_first_solution(solved_comment):
-    '''Return True if this solved comment is the first, False otherwise.'''
+    """Return True if this solved comment is the first, False otherwise."""
     # Retrieve any comments hidden by "more comments" by passing limit=0
     submission = solved_comment.submission
     submission.comments.replace_more(limit=0)
@@ -143,6 +150,7 @@ def is_first_solution(solved_comment):
 
 
 def find_solver(solved_comment):
+    """Determine the redditor responsible for solving the question."""
     return solved_comment.parent().author
 
 
