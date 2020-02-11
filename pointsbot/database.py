@@ -63,30 +63,6 @@ class Database:
         self.cursor.execute(insert_stmt, {'id': redditor.id, 'name': redditor.name})
         return self.cursor.rowcount
 
-#   @transaction
-#   def add_point(self, redditor):
-#       points = self.get_points(redditor, add_if_none=True)
-#       params = {'id': redditor.id, 'name': redditor.name, 'points': points + 1}
-#       update_stmt = '''
-#           UPDATE redditor_points
-#           SET points = :points
-#           WHERE id = :id AND name = :name
-#           '''
-#       self.cursor.execute(update_stmt, params)
-#       return self.cursor.rowcount
-
-#   @transaction
-#   def remove_point(self, redditor):
-#       points = self.get_points(redditor, add_if_none=True)
-#       params = {'id': redditor.id, 'name': redditor.name, 'points': points - 1}
-#       update_stmt = '''
-#           UPDATE redditor_points
-#           SET points = :points
-#           WHERE id = :id AND name = :name
-#           '''
-#       self.cursor.execute(update_stmt, params)
-#       return self.cursor.rowcount
-
     def add_point(self, redditor):
         return self._update_points(redditor, 1)
 
@@ -97,7 +73,6 @@ class Database:
     def _update_points(self, redditor, points_modifier):
         """points_modifier is positive to add points, negative to subtract."""
         points = self.get_points(redditor, add_if_none=True)
-        # params = {'id': redditor.id, 'name': redditor.name, 'points': points - 1}
         params = {
             'id': redditor.id,
             'name': redditor.name,
@@ -120,7 +95,7 @@ class Database:
             WHERE id = :id AND name = :name
         '''
         self.cursor.execute(select_stmt, params)
-        row = self.cursor.fetchone()   # TODO check if more than one row
+        row = self.cursor.fetchone()
         if row:
             points = row['points']
         elif add_if_none:
