@@ -34,6 +34,8 @@ def transaction(func):
 
 class Database:
 
+    SCHEMA_VERSION = '0.1'
+
     SCHEMA = '''
         CREATE TABLE IF NOT EXISTS redditor_points (
             id TEXT UNIQUE NOT NULL,
