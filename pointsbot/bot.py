@@ -44,7 +44,7 @@ def run():
         except prawcore.exceptions.RequestException as e:
             print('Unable to connect; attempting again....')
         except prawcore.exceptions.ServerError as e:
-            print('Lost connection to Reddit; attempting to reconnect....')
+            print('Lost connection; attempting to reconnect....')
 
 
 def monitor_comments(subreddit, db, levels):

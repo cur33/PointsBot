@@ -126,7 +126,7 @@ def progress_bar(points, level_info):
 
 
 def divider():
-    '''A single dividing line in Markdown.'''
+    """A single dividing line in Markdown."""
     return '***'
 
 
