@@ -1,13 +1,22 @@
 # TODO
 
+File-specific lists are in loose descending order of priority.
+
 ## Current
+
+n/a
 
 ## General
 
 * [ ] Logging
+    * Especially when unable to handle a comment
+* [ ] Notifications
+    * Let admins know if a comment can't be properly handled
+    * Email preferable; could do Reddit message, too
+        * Maybe have both and make into a config option
 * [ ] Testing
     - Any PRAW model that inherits from `praw.PRAWBase` has a `parse` method
-        that could perhaps be used to make fake objects for testing.
+        that could perhaps be used to make fake objects for testing
 * [ ] GUI
     - [ ] Create a GUI for configuring and running the bot, and performing other jobs
         like adding or subtracting points for specific redditors
@@ -43,6 +52,9 @@
 
 ### bot.py
 
+* [ ] Now that the date of each solution is being stored, can check for missed
+    submissions each time the bot is run by searching subreddit history until
+    last solution found
 * [ ] Allow mods and/or bot owner to add or remove points from specific users
 * [ ] Make the algorithm for determining the problem solver more sophisticated
     - e.g. check entire comment tree instead of just ignoring if the OP also
@@ -53,16 +65,19 @@
 
 ### config.py
 
+* [ ] Add list of emails to which notifications should be sent
 * [ ] Switch from `toml` package to `tomlkit` package
     - Preserves style, comments, etc.
 
 ### database.py
 
-* [ ] Store date for each "!solved" comment
-    - This basically means storing a link to each "![Ss]olved" comment, and
-        perhaps a link to the submission, although that can be derived as long
-        as the comment doesn't get deleted
+* [ ] For each solved submission, store:
+    - submission id
+    - solution comment id
+    - solved comment id
+    - date
+    - solver id
 * [ ] Possibly refactor for a datastore type thing instead of database
     - Maybe even make models like Redditor to combine data storage/access with
         logic, e.g. determining current level
-
+    - Seems like overkill, though

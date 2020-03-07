@@ -5,11 +5,6 @@
 To ensure that points are only awarded for the first comment marked as a
 solution:
 
-* Alter the database to allow for tracking of each submission and the first
-    comment marked as the solution. Then, everytime a new solution comment is
-    detected, simply check the database to see if the submission is already
-    counted. This will avoid unnecessary calls to Reddit, which would include
-    scanning all the submission comments each time.
 * This approach could also make it simpler to check whether a solution comment
     has been edited. Instead of having to do a daily search for edits, it could
     just check the original solution comment to ensure that it still contains
