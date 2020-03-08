@@ -278,12 +278,6 @@ class Database:
 
         solver_id = row['rowid']
 
-        # cur-debug
-        print()
-        print('Date')
-        print(solved_comment.created_utc)
-        print(type(solved_comment.created_utc))
-        print()
         solved_datetime = datetime.datetime.utcfromtimestamp(solved_comment.created_utc)
         datetime_iso = solved_datetime.isoformat()
 
