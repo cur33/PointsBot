@@ -38,6 +38,8 @@ class Config:
 
         self.subreddit = subreddit
 
+        # TODO technically a bad idea to keep these values in memory; should
+        # probably delete them when no longer needed
         self.client_id = client_id
         self.client_secret = client_secret
         self.username = username

@@ -1,9 +1,11 @@
 import re
+import sys
 
 import praw
 import prawcore
 
-from . import config, database, level, reply
+from . import config, level, reply
+from .data import database
 
 ### Globals ###
 
@@ -19,8 +21,18 @@ MOD_SOLVED_PAT = re.compile('/[Ss]olved')
 
 def run():
     cfg = config.load()
+    # TODO instead of letting config access level module, create a level
+    # function to take the values from cfg and convert them into the proper
+    # levels
     levels = cfg.levels
-    db = database.Database(cfg.database_path)
+
+    try:
+        db = database.Database(cfg.database_path)
+    except Exception as e:
+        print('Unable to set up database connection for the following reason:\n')
+        print(e)
+        print('\nPlease contact the bot creator/maintainer with the issue details')
+        sys.exit(1)
 
     # Run indefinitely, reconnecting any time a connection is lost
     while True:
@@ -65,6 +77,7 @@ def monitor_comments(subreddit, db, levels):
         if is_mod_comment(comm):
             print_level(1, 'Mod comment')
         elif not is_first_solution(comm):
+            # TODO also check db for pre-existing comments
             # Skip this "!solved" comment and wait for the next
             print_level(1, 'Not the first solution')
             continue
@@ -72,12 +85,15 @@ def monitor_comments(subreddit, db, levels):
         print_level(1, 'This is the first solution found')
         print_solution_info(comm)
 
+        # TODO don't just look at parent comment
         solver = find_solver(comm)
-        db.add_point(solver)
+        # db.add_point(solver)
+        db.add_solution(comm.submission, comm.parent(), comm, solver)
         print_level(1, f'Added point for {solver.name}')
 
         points = db.get_points(solver)
         print_level(1, f'Total points for {solver.name}: {points}')
+        # TODO check if points > 0?
         level_info = level.user_level_info(points, levels)
 
         # Reply to the comment marking the submission as solved
@@ -88,7 +104,8 @@ def monitor_comments(subreddit, db, levels):
         except praw.exceptions.APIException as e:
             print_level(1, 'Unable to reply to comment')
             print_level(2, f'{e}')
-            db.remove_point(solver)
+            #  db.remove_point(solver)
+            db.remove_solution(comm.submission, comm.parent(), comm, solver)
             print_level(1, f'Removed point awarded to {solver.name}')
             print_level(1, 'Skipping comment')
             continue
@@ -106,6 +123,9 @@ def monitor_comments(subreddit, db, levels):
                                     flair_template_id=lvl.flair_template_id)
             else:
                 print_level(2, 'Solver is mod; don\'t alter flair')
+        else:
+            # TODO handle error case
+            pass
 
 
 ### Reddit Comment Functions ###
