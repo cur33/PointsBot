@@ -12,6 +12,9 @@ EXCESS_POINTS = 100              # TODO move this to level?
 EXCESS_SYMBOL = '\u2605'         # A star character
 EXCESS_SYMBOL_TITLE = 'a star'   # Used in comment body
 
+# Markdown metacharacters that might need to be escaped
+MARKDOWN_CHARS = ['_', '*', '#']
+
 ### Main Functions ###
 
 
@@ -135,5 +138,17 @@ def footer():
             '| [Scoreboard](https://points.minecrafthelp.co.uk) '
             '| [Feedback](https://forms.gle/m94aGjFQwGopqQ836) '
             '| [Source Code](https://github.com/cur33/PointsBot))')
+
+
+### Markdown Functions ###
+
+
+def escape_markdown(string):
+    chars = []
+    for ch in string:
+        if ch in MARKDOWN_CHARS:
+            chars.append('\\')
+        chars.append(ch)
+    return ''.join(chars)
 
 
