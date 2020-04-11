@@ -1,11 +1,16 @@
-import level
+import context
+
+# import unittest
+
+# TODO???
+# from pointsbot import level
+import pointsbot.level as level
 
 levels = [
     ('Helper', 5),
     ('Trusted Helper', 15),
     ('Super Helper', 45),
 ]
-
 
 ### Test user_level_info ###
 

@@ -1,6 +1,8 @@
+import context
+
 from collections import namedtuple
 
-from context import pointsbot
+import pointsbot
 
 ### Data Structures ###
 

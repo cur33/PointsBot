@@ -12,7 +12,8 @@ from . import migrations
 
 
 # The argument should be a method, not just any function.
-# Apply this to any method that will need access to a cursor or conn object.
+# Apply this decorator to any method that will need access to a cursor or conn
+# object.
 def transaction(func):
     @functools.wraps(func)
     def newfunc(self, *args, **kwargs):
@@ -44,8 +45,8 @@ def transaction(func):
 
         if exc:
             raise exc
-
         return ret
+
     return newfunc
 
 

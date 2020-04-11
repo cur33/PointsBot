@@ -71,13 +71,3 @@ n/a
 
 ### database.py
 
-* [ ] For each solved submission, store:
-    - submission id
-    - solution comment id
-    - solved comment id
-    - date
-    - solver id
-* [ ] Possibly refactor for a datastore type thing instead of database
-    - Maybe even make models like Redditor to combine data storage/access with
-        logic, e.g. determining current level
-    - Seems like overkill, though

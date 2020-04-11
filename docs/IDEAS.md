@@ -1,5 +1,10 @@
 # IDEAS
 
+## Testing
+
+* Could use [Betamax](https://betamax.readthedocs.io/en/latest/) to make testing easier, or possible, for that matter
+    * Taken from the [PRAW testing](https://praw.readthedocs.io/en/latest/package_info/contributing.html#testing)
+
 ## Determining when to award points
 
 To ensure that points are only awarded for the first comment marked as a

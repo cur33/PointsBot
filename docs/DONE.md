@@ -37,6 +37,13 @@
 
 ### database.py
 
+* [X] For each solved submission, store:
+    - submission id
+    - solution comment id
+    - solved comment id
+    - date
+    - solver id
+
 ### reply.py
 
 * [X] Fix progress bar
