@@ -3,7 +3,7 @@ import os.path
 from collections import namedtuple
 from copy import deepcopy
 
-import toml
+import tomlkit
 
 from .level import Level
 
@@ -49,7 +49,8 @@ class Config:
 
     @classmethod
     def from_toml(cls, filepath):
-        obj = toml.load(filepath)
+        with open(filepath) as f:
+            obj = tomlkit.loads(f.read())
 
         # Create list of level objects, in ascending order by point value
         levels = []
@@ -87,7 +88,7 @@ class Config:
             })
 
         with open(self._filepath, 'w') as f:
-            toml.dump(obj, f)
+            f.write(tomlkit.dumps(obj))
 
 
 ### Functions ###
@@ -140,7 +141,7 @@ def interactive_config(dest):
         add_another_level = response.lower().startswith('y')
 
     with open(dest, 'w') as f:
-        toml.dump(configvals, f)
+        f.write(tomlkit.dumps(configvals))
     print('#' * 80 + f'\nConfig settings saved to {dest}\n' + '#' * 80)
 
 
