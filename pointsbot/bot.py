@@ -13,9 +13,9 @@ from . import config, database, level, reply
 USER_AGENT = 'PointsBot (by u/GlipGlorp7)'
 
 # TODO put this in config
-LOG_FILEPATH = os.path.abspath(os.path.join(os.path.expanduser('~'),
-                                            '.pointsbot',
-                                            'pointsbot.log.txt'))
+#  LOG_FILEPATH = os.path.abspath(os.path.join(os.path.expanduser('~'),
+                                            #  '.pointsbot',
+                                            #  'pointsbot.log'))
 
 # The pattern that determines whether a post is marked as solved
 # Could also use re.IGNORECASE flag instead
@@ -26,14 +26,13 @@ MOD_SOLVED_PAT = re.compile('/[Ss]olved')
 
 
 def run():
-    logging.basicConfig(filename=LOG_FILEPATH,
-                        level=logging.DEBUG,
-                        format='%(asctime)s %(module)s:%(levelname)s: %(message)s',
-                        datefmt='%Y-%m-%d %H:%M:%S')
-
     print_welcome_message()
 
     cfg = config.load()
+    logging.basicConfig(filename=cfg.log_path,
+                        level=logging.DEBUG,
+                        format='%(asctime)s %(levelname)s:%(module)s: %(message)s',
+                        datefmt='%Y-%m-%d %H:%M:%S')
     levels = cfg.levels
     db = database.Database(cfg.database_path)
 
@@ -78,46 +77,43 @@ def monitor_comments(subreddit, db, levels):
         logging.info('Received comment')
         # TODO more debug info about comment, eg author
         logging.debug('Comment text: "%s"', comm.body)
-        # print_level(0, '\nFound comment')
-        # print_level(1, f'Comment text: "{comm.body}"')
 
         if not marks_as_solved(comm):
             logging.info('Comment does not mark issue as solved')
-            # print_level(1, 'Not a "![Ss]olved" comment')
             continue
 
         logging.info('Comment marks issues as solved')
 
         if is_mod_comment(comm):
             logging.info('Comment was submitted by mod')
-            # print_level(1, 'Mod comment')
         elif not is_first_solution(comm):
             # Skip this "!solved" comment
             logging.info('Comment is NOT the first to mark the issue as solved')
-            # print_level(1, 'Not the first solution')
             continue
 
         logging.info('Comment is the first to mark the issue as solved')
-        # print_level(1, 'This is the first solution found')
         log_solution_info(comm)
 
         solver = find_solver(comm)
         db.add_point(solver)
         logging.info('Added point for user "%s"', solver.name)
-        # print_level(1, f'Added point for {solver.name}')
 
         points = db.get_points(solver)
         logging.info('Total points for user "%s": %d', solver.name, points)
-        # print_level(1, f'Total points for {solver.name}: {points}')
         level_info = level.user_level_info(points, levels)
 
         # Reply to the comment marking the submission as solved
-        reply_body = reply.make(solver, points, level_info)
+        reply_body = reply.make(
+            solver,
+            points,
+            level_info,
+            feedback_url=cfg.feedback_url,
+            scoreboard_url=cfg.scoreboard_url
+        )
         try:
             comm.reply(reply_body)
             logging.info('Replied to the comment')
             logging.debug('Reply body: %s', reply_body)
-            # print_level(1, f'Replied to comment with: "{reply_body}"')
         except praw.exceptions.APIException as e:
             logging.error('Unable to reply to comment: %s', e)
             db.remove_point(solver)
@@ -130,7 +126,6 @@ def monitor_comments(subreddit, db, levels):
         if lvl and lvl.points == points:
             logging.info('User reached level: %s', lvl.name)
             if not subreddit.moderator(redditor=solver):
-                # print_level(2, 'Setting flair')
                 logging.info('User is not mod; setting flair')
                 logging.info('Flair text: %s', lvl.name)
                 logging.info('Flair template ID: %s', lvl.flair_template_id)
@@ -208,10 +203,7 @@ def print_welcome_message():
           'sent to the developer by reporting an issue on the Github page.')
     print('\nFuture updates will hopefully resolve these issues, but for the '
           "moment, this is what we've got to work with! :)\n")
-
-
-def print_level(num_levels, string):
-    print('\t' * num_levels + string)
+    print_separator_line()
 
 
 def log_solution_info(comm):

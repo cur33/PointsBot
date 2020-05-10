@@ -13,9 +13,24 @@ DATADIR = os.path.join(os.path.expanduser('~'), '.pointsbot')
 CONFIGPATH = os.path.join(DATADIR, 'pointsbot.toml')
 
 # Path to the sample config file
+# Unused for now
 SAMPLEPATH = os.path.abspath(os.path.join(os.path.dirname(__file__),
                                           '..',
                                           'pointsbot.sample.toml'))
+
+### Primary Functions ###
+
+
+def load(filepath=CONFIGPATH):
+    # Prompt user for config values if file doesn't exist
+    if not os.path.exists(filepath):
+        datadir = os.path.dirname(filepath)
+        if not os.path.exists(datadir):
+            os.makedirs(datadir)
+        interactive_config(filepath)
+
+    return Config.from_toml(filepath)
+
 
 ### Classes ###
 
@@ -23,20 +38,32 @@ SAMPLEPATH = os.path.abspath(os.path.join(os.path.dirname(__file__),
 class Config:
 
     # Default config vals
-    DEFAULT_DBNAME = 'pointsbot.db'
+    DEFAULT_DB_NAME = 'pointsbot.db'
+    DEFAULT_LOG_NAME = 'pointsbot.log'
 
     def __init__(self, filepath, subreddit, client_id, client_secret, username,
-                 password, levels, database_path=None):
+                 password, levels, database_path=None, log_path=None,
+                 feedback_url=None, scoreboard_url=None):
         self._filepath = filepath
         self._dirname = os.path.dirname(filepath)
 
+        if not log_path:
+            log_path = os.path.join(self._dirname, self.DEFAULT_LOG_NAME)
+        elif os.path.isdir(log_path):
+            log_path = os.path.join(log_path, self.DEFAULT_LOG_NAME)
+        self.log_path = log_path
+
+        # TODO init logging here so it can be used immediately?
+
         if not database_path:
-            database_path = os.path.join(self._dirname, self.DEFAULT_DBNAME)
+            database_path = os.path.join(self._dirname, self.DEFAULT_DB_NAME)
         elif os.path.isdir(database_path):
-            database_path = os.path.join(database_path, self.DEFAULT_DBNAME)
+            database_path = os.path.join(database_path, self.DEFAULT_DB_NAME)
         self.database_path = database_path
 
         self.subreddit = subreddit
+        self.feedback_url = feedback_url
+        self.scoreboard_url = scoreboard_url
 
         self.client_id = client_id
         self.client_secret = client_secret
@@ -62,6 +89,10 @@ class Config:
         if dbpath:
             dbpath = os.path.abspath(os.path.expandvars(os.path.expanduser(dbpath)))
 
+        logpath = obj['filepaths']['log']
+        if logpath:
+            logpath = os.path.abspath(os.path.expandvars(os.path.expanduser(logpath)))
+
         return cls(
             filepath,
             obj['core']['subreddit'],
@@ -71,12 +102,15 @@ class Config:
             obj['credentials']['password'],
             levels,
             database_path=dbpath,
+            log_path=logpath,
+            feedback_url=obj['links']['feedback'],
+            scoreboard_url=obj['links']['scoreboard'],
         )
 
     def save(self):
         obj = deepcopy(vars(self))
-        orig_levels = obj['levels']
-        obj['levels'] = []
+        orig_levels, obj['levels'] = obj['levels'], []
+        # obj['levels'] = []
         for level in orig_levels:
             obj['levels'].append({
                 'name': level.name,
@@ -86,20 +120,6 @@ class Config:
 
         with open(self._filepath, 'w') as f:
             toml.dump(obj, f)
-
-
-### Functions ###
-
-
-def load(filepath=CONFIGPATH):
-    # Prompt user for config values if file doesn't exist
-    if not os.path.exists(filepath):
-        datadir = os.path.dirname(filepath)
-        if not os.path.exists(datadir):
-            os.makedirs(datadir)
-        interactive_config(filepath)
-
-    return Config.from_toml(filepath)
 
 
 ### Interactive Config Editing ###
@@ -113,14 +133,25 @@ def interactive_config(dest):
         'levels': [],
     }
 
-    print('#' * 80 + '\nCONFIGURING THE BOT\n' + '#' * 80)
-    print('\nType a value for each field, then press enter.')
+    print('\n' + ('#' * 80) + '\nCONFIGURING THE BOT\n' + ('#' * 80) + '\n')
+    print('Type a value for each field, then press enter.')
     print('\nIf a field is specified as optional, then you can skip it by just '
-          'pressing enter.\n')
+          'pressing enter.')
+    print("\nIt is recommended that you skip any fields that you aren't sure "
+          'about')
 
+    print('\n*** Core Configuration ***\n')
     configvals['core']['subreddit'] = input('name of subreddit to monitor? ')
     print()
-    configvals['filepaths']['database'] = input('database filename? (optional) ')
+    configvals['filepaths']['database'] = input('database filepath? (optional) ')
+    configvals['filepaths']['log'] = input('log filepath? (optional) ')
+
+    print('\n*** Website Links ***\n')
+    print('These values should only be provided if you have valid URLs for '
+          'websites that provide these services for your subreddit.\n')
+    configvals['links']['feedback'] = input('feedback webpage URL? (optional) ')
+    configvals['links']['scoreboard'] = input('scoreboard webpage URL? (optional) ')
+
     print('\n*** Bot account details ***\n')
     configvals['credentials']['client_id'] = input('client_id? ')
     configvals['credentials']['client_secret'] = input('client_secret? ')
@@ -144,18 +175,16 @@ def interactive_config(dest):
     print('\nFor any more questions, please refer to the README on the Github '
           'page.')
 
-    # add_another_level = True
     response = 'y'
     while response.lower().startswith('y'):
-        print('\n*** Adding a level ***')
+        print('\n*** Adding a level ***\n')
         level = {}
-        level['name'] = input('\nLevel name? ')
+        level['name'] = input('Level name? ')
         level['points'] = int(input('Level points? '))
         level['flair_template_id'] = input('Flair template ID? (optional) ')
         configvals['levels'].append(level)
 
         response = input('\nAdd another level? (y/n) ')
-        # add_another_level = response.lower().startswith('y')
 
     with open(dest, 'w') as f:
         toml.dump(configvals, f)

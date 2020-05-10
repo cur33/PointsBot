@@ -4,8 +4,8 @@
 
 * [Description](#description)
 * [Installation](#installation)
+* [Prerequisites & Configuration](#prerequisites--configuration)
 * [Usage](#usage)
-* [Setup](#setup)
 * [Terms of Use for a bot for Reddit](#terms-of-use-for-a-bot-for-reddit)
 * [License](#license)
 
@@ -41,10 +41,21 @@ awarded for each submission.
 
 ## Installation
 
-Requirements:
+### Basic Installation
 
+These are the instructions for simply using the bot without needing to edit the
+code. These instructions are best suited for users with less technical
+experience.
+
+Go the the [releases page](https://github.com/cur33/PointsBot/releases) for this
+project, then download and unzip the latest release. Make sure you pick the
+release best suited for your machine & operating system.
+
+### Advanced Installation
+
+Requirements:
 * [Python 3](https://www.python.org/downloads/) (specifically version 3.7 or greater)
-    * pip (should be installed automatically with Python)
+* pip (should be installed automatically with Python)
 * [pipenv](https://pipenv.readthedocs.io/en/latest/)
     * After installying Python & pip, install by running `pip install pipenv`
     * For other installation options,
@@ -60,39 +71,7 @@ To uninstall (i.e. delete the project's virtual environment and the installed
 python packages), navigate to the project root directory and instead run
 `pipenv --rm`.
 
-## Usage
-
-Once you have followed the instructions in the [Setup](#setup) section below,
-the simplest way to run the bot is to navigate to the project root directory and
-run:
-
-```bash
-pipenv run python -m pointsbot
-```
-
-## Setup
-
-### Configuration file
-
-The bot stores any necessary data, including configuration, under the
-`.pointsbot` directory in your home directory.
-
-If this is your first time running the bot, you will need to copy
-`pointsbot.sample.toml` to a new file called `.pointsbot\pointsbot.toml`,
-located in the `.pointsbot` directory mentioned above. Any instances of
-the word "REDACTED" should be replaced with the appropriate values; other values
-should work as-is, but can be changed as needed.
-
-This is because the config file can contain sensitive information, and
-maintaining only sample versions of these files helps developers to avoid
-accidentally uploading that sensitive information to a public (or even private)
-code repository.
-
-More information on the specific config options can be found in the comments in
-the sample config file.
-
-You shouldn't have to worry about it, but if you need it, information on the
-TOML syntax used for the file can be found on [Github](https://github.com/toml-lang/toml).
+## Prerequisites & Configuration
 
 ### Bot account
 
@@ -129,6 +108,73 @@ button for the app under the "developed applications" section.
 Some of the bot's behaviors, e.g. altering redditor flairs, require moderator
 permissions. It should require just the "Flair" and "Posts" permissions and
 perhaps the "Access" permission, so you don't need to grant it full permissions.
+
+### Configuration file
+
+The bot will store its configuration file in a `.pointsbot` directory under the
+home directory for your user on your machine. By default, this directory is also
+where it will store its database and log files, but you can alter this behavior
+by specifying other locations for those in the configuration process.
+
+If this is your first time running the bot, then it will fail to detect a
+configuration file and will prompt you for the necessary fields. This includes
+the credentials for the Reddit account and Reddit app which you created for the
+bot in the [Prerequisites & Configuration](#prerequisites--configuration) step
+above. The bot will create the configuration file and save this information for
+future use.
+
+At the moment, there is not a good way to edit the existing configuration unless
+you want to edit the configuration file yourself (see next paragraph). This is
+the recommended process for editing the configuration until this feature is
+added:
+1. Go to your home directory and open the `.pointsbot` directory.
+2. Either rename the `pointsbot.toml` file to something else, or move it to a
+   different directory.
+3. Open that file in a text editor (if you haven't installed one, you can use
+   the default text editor for your operating system, like Notepad on Windows).
+4. Run the bot and walk through the configuration process again, copying and
+   pasting any unchanged values from the original configuration file.
+5. Once you are finished, you can either keep the old configuration file for a
+   while just in case, or you can delete it.
+
+If you'd prefer, you can instead create and edit the configuration file
+yourself. You will need to copy `pointsbot.sample.toml` to a new file called
+`pointsbot.toml` located in the `.pointsbot` directory mentioned above. Any
+instances of the word "REDACTED" should be replaced with the appropriate values;
+other values should work as-is, but can be changed as needed.
+
+This is because the config file can contain sensitive information, and
+maintaining only sample versions of these files in this repository helps
+developers to avoid accidentally uploading that sensitive information to a
+public (or even private) code repository.
+
+More information on the specific config options can be found in the comments in
+the sample config file.
+
+You shouldn't have to worry about it, but if you need it, information on the
+TOML syntax used for the file can be found on
+[TOML's Github page](https://github.com/toml-lang/toml).
+
+## Usage
+
+### Basic Usage
+
+Follow these instructions if you downloaded the bot from the releases page in
+the [Installation](#installation) step above.
+
+In the unzipped folder, double-click on the `PointsBot.exe` file. It will open a
+command prompt that will ask you for any additional information it may require.
+You will *not* need any knowledge of the command prompt for your operating
+system to interact with the bot.
+
+### Advanced Usage
+
+The simplest way to run the bot is to navigate to the project root directory and
+run:
+
+```bash
+pipenv run python PointsBot.py
+```
 
 ## Terms of use for a bot for Reddit
 

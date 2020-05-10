@@ -8,14 +8,14 @@ FILLED_SYMBOL = '\u25AE'   # A small filled box character
 EMPTY_SYMBOL  = '\u25AF'   # A same-sized empty box character
 
 # Number of "excess" points should be greater than max level points
-EXCESS_POINTS = 100              # TODO move this to level?
+EXCESS_POINTS = 100              # TODO move this to level and/or config?
 EXCESS_SYMBOL = '\u2605'         # A star character
 EXCESS_SYMBOL_TITLE = 'a star'   # Used in comment body
 
 ### Main Functions ###
 
 
-def make(redditor, points, level_info):
+def make(redditor, points, level_info, feedback_url=None, scoreboard_url=None):
     paras = [header()]
 
     if points == 1:
@@ -45,7 +45,7 @@ def make(redditor, points, level_info):
 
     paras.append(points_status(redditor, points, level_info))
     paras.append(divider())
-    paras.append(footer())
+    paras.append(footer(feedback_url=feedback_url, scoreboard_url=scoreboard_url))
     return '\n\n'.join(paras)
 
 
@@ -130,10 +130,21 @@ def divider():
     return '***'
 
 
-def footer():
-    return ('^(Bot maintained by GlipGlorp7 '
-            '| [Scoreboard](https://points.minecrafthelp.co.uk) '
-            '| [Feedback](https://forms.gle/m94aGjFQwGopqQ836) '
-            '| [Source Code](https://github.com/cur33/PointsBot))')
+def footer(feedback_url=None, scoreboard_url=None):
+    footer_sections = ['Bot maintained by GlipGlorp7']
+    if scoreboard_url:
+        # https://points.minecrafthelp.co.uk
+        footer_sections.append(f'[Scoreboard]({scoreboard_url})')
+    if feedback_url:
+        # https://forms.gle/m94aGjFQwGopqQ836
+        footer_sections.append(f'[Feedback]({feedback_url})')
+    footer_sections.append('[Source Code](https://github.com/cur33/PointsBot)')
+
+    return '^(' + ' | '.join(footer_sections) + ')'
+
+    #  return ('^(Bot maintained by GlipGlorp7 '
+            #  '| [Scoreboard](https://points.minecrafthelp.co.uk) '
+            #  '| [Feedback](https://forms.gle/m94aGjFQwGopqQ836) '
+            #  '| [Source Code](https://github.com/cur33/PointsBot))')
 
 
