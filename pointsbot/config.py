@@ -115,19 +115,39 @@ def interactive_config(dest):
 
     print('#' * 80 + '\nCONFIGURING THE BOT\n' + '#' * 80)
     print('\nType a value for each field, then press enter.')
-    print('\nIf the field is specified as optional, leave blank to skip.\n')
+    print('\nIf a field is specified as optional, then you can skip it by just '
+          'pressing enter.\n')
 
-    configvals['core']['subreddit'] = input('subreddit? ')
+    configvals['core']['subreddit'] = input('name of subreddit to monitor? ')
     print()
     configvals['filepaths']['database'] = input('database filename? (optional) ')
-    print()
+    print('\n*** Bot account details ***\n')
     configvals['credentials']['client_id'] = input('client_id? ')
     configvals['credentials']['client_secret'] = input('client_secret? ')
-    configvals['credentials']['username'] = input('username? ')
-    configvals['credentials']['password'] = input('password? ')
+    configvals['credentials']['username'] = input('bot username? ')
+    configvals['credentials']['password'] = input('bot password? ')
 
-    add_another_level = True
-    while add_another_level:
+    print('\n*** Flair Levels ***\n')
+    print('These fields will determine the different levels that your '
+          'subreddit users can achieve by earning points.')
+    print('\nFor each level, you should provide...')
+    print("\t- Level name:        the text that appears in the user's flair")
+    print('\t- Level points:      the number of points needed to reach the level')
+    print('\t- Flair template ID: (optional) the flair template ID in your')
+    print('\t                     subreddit to be used for this level flair')
+    print('\nThese may be provided in any order; the bot will sort them later.')
+    print('\nDo not provide more than one level with the same number of points.')
+    print('\nNote that at the moment, providing a level points value of zero '
+          'will not set a default flair, because users must solve at least one '
+          'issue before the bot will keep track of their points and set their '
+          'flair for the first time.')
+    print('\nFor any more questions, please refer to the README on the Github '
+          'page.')
+
+    # add_another_level = True
+    response = 'y'
+    while response.lower().startswith('y'):
+        print('\n*** Adding a level ***')
         level = {}
         level['name'] = input('\nLevel name? ')
         level['points'] = int(input('Level points? '))
@@ -135,7 +155,7 @@ def interactive_config(dest):
         configvals['levels'].append(level)
 
         response = input('\nAdd another level? (y/n) ')
-        add_another_level = response.lower().startswith('y')
+        # add_another_level = response.lower().startswith('y')
 
     with open(dest, 'w') as f:
         toml.dump(configvals, f)

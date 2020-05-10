@@ -1,3 +1,6 @@
+import logging
+import os
+import os.path
 import re
 
 import praw
@@ -9,8 +12,13 @@ from . import config, database, level, reply
 
 USER_AGENT = 'PointsBot (by u/GlipGlorp7)'
 
+# TODO put this in config
+LOG_FILEPATH = os.path.abspath(os.path.join(os.path.expanduser('~'),
+                                            '.pointsbot',
+                                            'pointsbot.log.txt'))
+
 # The pattern that determines whether a post is marked as solved
-# Could also just use re.IGNORECASE flag
+# Could also use re.IGNORECASE flag instead
 SOLVED_PAT = re.compile('![Ss]olved')
 MOD_SOLVED_PAT = re.compile('/[Ss]olved')
 
@@ -18,6 +26,13 @@ MOD_SOLVED_PAT = re.compile('/[Ss]olved')
 
 
 def run():
+    logging.basicConfig(filename=LOG_FILEPATH,
+                        level=logging.DEBUG,
+                        format='%(asctime)s %(module)s:%(levelname)s: %(message)s',
+                        datefmt='%Y-%m-%d %H:%M:%S')
+
+    print_welcome_message()
+
     cfg = config.load()
     levels = cfg.levels
     db = database.Database(cfg.database_path)
@@ -30,21 +45,26 @@ def run():
                                  username=cfg.username,
                                  password=cfg.password,
                                  user_agent=USER_AGENT)
-            subreddit = reddit.subreddit(cfg.subreddit)
+            logging.info('Connected to Reddit as %s', reddit.user.me())
+            if not reddit.read_only:
+                logging.info('Has write access to Reddit')
+            else:
+                logging.info('Has read-only access to Reddit')
 
-            print_level(0, f'Connected to Reddit as {reddit.user.me()}')
-            print_level(1, f'Read-only? {reddit.read_only}')
-            print_level(0, f'Watching subreddit {subreddit.title}')
-            is_mod = bool(subreddit.moderator(redditor=reddit.user.me()))
-            print_level(1, f'Is mod? {is_mod}')
+            subreddit = reddit.subreddit(cfg.subreddit)
+            logging.info('Watching subreddit %s', subreddit.title)
+            if subreddit.moderator(redditor=reddit.user.me()):
+                logging.info('Is moderator for monitored subreddit')
+            else:
+                logging.warning('Is NOT moderator for monitored subreddit')
 
             monitor_comments(subreddit, db, levels)
         # Ignoring other potential exceptions for now, since we may not be able
         # to recover from them as well as from this one
         except prawcore.exceptions.RequestException as e:
-            print('Unable to connect; attempting again....')
+            log.error('Unable to connect; attempting again....')
         except prawcore.exceptions.ServerError as e:
-            print('Lost connection to Reddit; attempting to reconnect....')
+            log.error('Lost connection to Reddit; attempting to reconnect....')
 
 
 def monitor_comments(subreddit, db, levels):
@@ -55,57 +75,70 @@ def monitor_comments(subreddit, db, levels):
         if comm is None:
             continue
 
-        print_level(0, '\nFound comment')
-        print_level(1, f'Comment text: "{comm.body}"')
+        logging.info('Received comment')
+        # TODO more debug info about comment, eg author
+        logging.debug('Comment text: "%s"', comm.body)
+        # print_level(0, '\nFound comment')
+        # print_level(1, f'Comment text: "{comm.body}"')
 
         if not marks_as_solved(comm):
-            print_level(1, 'Not a "![Ss]olved" comment')
+            logging.info('Comment does not mark issue as solved')
+            # print_level(1, 'Not a "![Ss]olved" comment')
             continue
+
+        logging.info('Comment marks issues as solved')
 
         if is_mod_comment(comm):
-            print_level(1, 'Mod comment')
+            logging.info('Comment was submitted by mod')
+            # print_level(1, 'Mod comment')
         elif not is_first_solution(comm):
-            # Skip this "!solved" comment and wait for the next
-            print_level(1, 'Not the first solution')
+            # Skip this "!solved" comment
+            logging.info('Comment is NOT the first to mark the issue as solved')
+            # print_level(1, 'Not the first solution')
             continue
 
-        print_level(1, 'This is the first solution found')
-        print_solution_info(comm)
+        logging.info('Comment is the first to mark the issue as solved')
+        # print_level(1, 'This is the first solution found')
+        log_solution_info(comm)
 
         solver = find_solver(comm)
         db.add_point(solver)
-        print_level(1, f'Added point for {solver.name}')
+        logging.info('Added point for user "%s"', solver.name)
+        # print_level(1, f'Added point for {solver.name}')
 
         points = db.get_points(solver)
-        print_level(1, f'Total points for {solver.name}: {points}')
+        logging.info('Total points for user "%s": %d', solver.name, points)
+        # print_level(1, f'Total points for {solver.name}: {points}')
         level_info = level.user_level_info(points, levels)
 
         # Reply to the comment marking the submission as solved
         reply_body = reply.make(solver, points, level_info)
         try:
             comm.reply(reply_body)
-            print_level(1, f'Replied to comment with: "{reply_body}"')
+            logging.info('Replied to the comment')
+            logging.debug('Reply body: %s', reply_body)
+            # print_level(1, f'Replied to comment with: "{reply_body}"')
         except praw.exceptions.APIException as e:
-            print_level(1, 'Unable to reply to comment')
-            print_level(2, f'{e}')
+            logging.error('Unable to reply to comment: %s', e)
             db.remove_point(solver)
-            print_level(1, f'Removed point awarded to {solver.name}')
-            print_level(1, 'Skipping comment')
+            logging.error('Removed point that was just awarded to user "%s"', solver.name)
+            logging.error('Skipping comment')
             continue
 
         # Check if (non-mod) user flair should be updated to new level
         lvl = level_info.current
         if lvl and lvl.points == points:
-            print_level(1, f'User reached level: {lvl.name}')
+            logging.info('User reached level: %s', lvl.name)
             if not subreddit.moderator(redditor=solver):
-                print_level(2, 'Setting flair')
-                print_level(3, f'Flair text: {lvl.name}')
-                print_level(3, f'Flair template ID: {lvl.flair_template_id}')
+                # print_level(2, 'Setting flair')
+                logging.info('User is not mod; setting flair')
+                logging.info('Flair text: %s', lvl.name)
+                logging.info('Flair template ID: %s', lvl.flair_template_id)
                 subreddit.flair.set(solver,
                                     text=lvl.name,
                                     flair_template_id=lvl.flair_template_id)
             else:
-                print_level(2, 'Solver is mod; don\'t alter flair')
+                logging.info('Solver is mod; don\'t alter flair')
 
 
 ### Reddit Comment Functions ###
@@ -154,20 +187,40 @@ def find_solver(solved_comment):
     return solved_comment.parent().author
 
 
-### Debugging & Logging ###
+### Print Functions ###
+
+
+def print_separator_line():
+    print('#' * 80)
+
+
+def print_welcome_message():
+    print_separator_line()
+    print('\n*** Welcome to PointsBot! ***\n')
+    print_separator_line()
+    print('\nThis bot will monitor the subreddit specified in the '
+          'configuration file as long as this program is running.')
+    print('\nAny Reddit activity that occurs while this program is not running '
+          'will be missed. You can work around this by using features '
+          'mentioned in the README.')
+    print('\nThe output from this program can be referenced if any issues are '
+          'to occur, and the relevant error message or crash report can be '
+          'sent to the developer by reporting an issue on the Github page.')
+    print('\nFuture updates will hopefully resolve these issues, but for the '
+          "moment, this is what we've got to work with! :)\n")
 
 
 def print_level(num_levels, string):
     print('\t' * num_levels + string)
 
 
-def print_solution_info(comm):
-    print_level(1, 'Submission solved')
-    print_level(2, 'Solution comment:')
-    print_level(3, f'Author: {comm.parent().author.name}')
-    print_level(3, f'Body:   {comm.parent().body}')
-    print_level(2, '"Solved" comment:')
-    print_level(3, f'Author: {comm.author.name}')
-    print_level(3, f'Body:   {comm.body}')
+def log_solution_info(comm):
+    logging.info('Submission solved')
+    logging.debug('Solution comment:')
+    logging.debug('Author: %s', comm.parent().author.name)
+    logging.debug('Body:   %s', comm.parent().body)
+    logging.debug('"Solved" comment:')
+    logging.debug('Author: %s', comm.author.name)
+    logging.debug('Body:   %s', comm.body)
 
 
