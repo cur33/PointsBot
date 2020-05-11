@@ -128,6 +128,7 @@ class Config:
 def interactive_config(dest):
     configvals = {
         'core': {},
+        'links': {},
         'filepaths': {},
         'credentials': {},
         'levels': [],

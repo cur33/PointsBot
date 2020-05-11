@@ -3,7 +3,8 @@
 ## 2020/05/10
 
 Features:
-1. Adding basic initial logging to a file
+1. Adding basic initial logging
+    * Logs both to a file and to the command prompt
 
 Fixes: N/A
 

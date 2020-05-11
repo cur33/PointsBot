@@ -2,6 +2,7 @@ import logging
 import os
 import os.path
 import re
+import sys
 
 import praw
 import prawcore
@@ -29,7 +30,12 @@ def run():
     print_welcome_message()
 
     cfg = config.load()
-    logging.basicConfig(filename=cfg.log_path,
+
+    file_handler = logging.FileHandler(cfg.log_path, 'w', 'utf-8')
+    console_handler = logging.StreamHandler(sys.stderr)
+    console_handler.setLevel(logging.INFO)
+    # logging.basicConfig(filename=cfg.log_path,
+    logging.basicConfig(handlers=[file_handler, console_handler],
                         level=logging.DEBUG,
                         format='%(asctime)s %(levelname)s:%(module)s: %(message)s',
                         datefmt='%Y-%m-%d %H:%M:%S')
@@ -57,16 +63,20 @@ def run():
             else:
                 logging.warning('Is NOT moderator for monitored subreddit')
 
-            monitor_comments(subreddit, db, levels)
+            monitor_comments(subreddit, db, levels, cfg)
         # Ignoring other potential exceptions for now, since we may not be able
         # to recover from them as well as from this one
         except prawcore.exceptions.RequestException as e:
-            log.error('Unable to connect; attempting again....')
+            logging.error('Unable to connect to Reddit')
+            logging.error('Error message: %s', e)
+            logging.error('Trying again')
         except prawcore.exceptions.ServerError as e:
-            log.error('Lost connection to Reddit; attempting to reconnect....')
+            logging.error('Lost connection to Reddit')
+            logging.error('Error message: %s', e)
+            logging.error('Attempting to reconnect')
 
 
-def monitor_comments(subreddit, db, levels):
+def monitor_comments(subreddit, db, levels, cfg):
     """Monitor new comments in the subreddit, looking for confirmed solutions."""
     # Passing pause_after=0 will bypass the internal exponential delay, but have
     # to check if any comments are returned with each query
@@ -76,7 +86,8 @@ def monitor_comments(subreddit, db, levels):
 
         logging.info('Received comment')
         # TODO more debug info about comment, eg author
-        logging.debug('Comment text: "%s"', comm.body)
+        logging.debug('Comment author: "%s"', comm.author.name)
+        # logging.debug('Comment text: "%s"', comm.body)
 
         if not marks_as_solved(comm):
             logging.info('Comment does not mark issue as solved')
@@ -103,17 +114,15 @@ def monitor_comments(subreddit, db, levels):
         level_info = level.user_level_info(points, levels)
 
         # Reply to the comment marking the submission as solved
-        reply_body = reply.make(
-            solver,
-            points,
-            level_info,
-            feedback_url=cfg.feedback_url,
-            scoreboard_url=cfg.scoreboard_url
-        )
+        reply_body = reply.make(solver,
+                                points,
+                                level_info,
+                                feedback_url=cfg.feedback_url,
+                                scoreboard_url=cfg.scoreboard_url)
         try:
             comm.reply(reply_body)
             logging.info('Replied to the comment')
-            logging.debug('Reply body: %s', reply_body)
+            # logging.debug('Reply body: %s', reply_body)
         except praw.exceptions.APIException as e:
             logging.error('Unable to reply to comment: %s', e)
             db.remove_point(solver)
@@ -211,7 +220,7 @@ def log_solution_info(comm):
     logging.debug('Solution comment:')
     logging.debug('Author: %s', comm.parent().author.name)
     logging.debug('Body:   %s', comm.parent().body)
-    logging.debug('"Solved" comment:')
+    logging.debug('Comment marking solution as solved:')
     logging.debug('Author: %s', comm.author.name)
     logging.debug('Body:   %s', comm.body)
 

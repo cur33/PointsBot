@@ -12,6 +12,12 @@ EXCESS_POINTS = 100              # TODO move this to level and/or config?
 EXCESS_SYMBOL = '\u2605'         # A star character
 EXCESS_SYMBOL_TITLE = 'a star'   # Used in comment body
 
+###
+# TODO make this a ReplyFactory? pass in feedback & scoreboard URLs to the
+# ReplyFactory constructor, then pass in redditor, points, level_info each time
+# making a comment, ie probably make `make` or `build` a method of the factory
+###
+
 ### Main Functions ###
 
 
