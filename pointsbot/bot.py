@@ -3,6 +3,7 @@ import os
 import os.path
 import re
 import sys
+from collections import namedtuple
 
 import praw
 import prawcore
@@ -13,15 +14,10 @@ from . import config, database, level, reply
 
 USER_AGENT = 'PointsBot (by u/GlipGlorp7)'
 
-# TODO put this in config
-#  LOG_FILEPATH = os.path.abspath(os.path.join(os.path.expanduser('~'),
-                                            #  '.pointsbot',
-                                            #  'pointsbot.log'))
-
 # The pattern that determines whether a post is marked as solved
 # Could also use re.IGNORECASE flag instead
-SOLVED_PAT = re.compile('![Ss]olved')
-MOD_SOLVED_PAT = re.compile('/[Ss]olved')
+SOLVED_PATTERN = re.compile('![Ss]olved')
+MOD_SOLVED_PATTERN = re.compile('/[Ss]olved')
 
 ### Main Function ###
 
@@ -34,7 +30,7 @@ def run():
     file_handler = logging.FileHandler(cfg.log_path, 'w', 'utf-8')
     console_handler = logging.StreamHandler(sys.stderr)
     console_handler.setLevel(logging.INFO)
-    # logging.basicConfig(filename=cfg.log_path,
+
     logging.basicConfig(handlers=[file_handler, console_handler],
                         level=logging.DEBUG,
                         format='%(asctime)s %(levelname)s:%(module)s: %(message)s',
@@ -54,7 +50,7 @@ def run():
             if not reddit.read_only:
                 logging.info('Has write access to Reddit')
             else:
-                logging.info('Has read-only access to Reddit')
+                logging.warning('Has read-only access to Reddit')
 
             subreddit = reddit.subreddit(cfg.subreddit)
             logging.info('Watching subreddit %s', subreddit.title)
@@ -63,7 +59,7 @@ def run():
             else:
                 logging.warning('Is NOT moderator for monitored subreddit')
 
-            monitor_comments(subreddit, db, levels, cfg)
+            monitor_comments(reddit, subreddit, db, levels, cfg)
         # Ignoring other potential exceptions for now, since we may not be able
         # to recover from them as well as from this one
         except prawcore.exceptions.RequestException as e:
@@ -76,33 +72,40 @@ def run():
             logging.error('Attempting to reconnect')
 
 
-def monitor_comments(subreddit, db, levels, cfg):
+def monitor_comments(reddit, subreddit, db, levels, cfg):
     """Monitor new comments in the subreddit, looking for confirmed solutions."""
     # Passing pause_after=0 will bypass the internal exponential delay, but have
     # to check if any comments are returned with each query
     for comm in subreddit.stream.comments(skip_existing=True, pause_after=0):
         if comm is None:
             continue
-
-        logging.info('Received comment')
-        # TODO more debug info about comment, eg author
-        logging.debug('Comment author: "%s"', comm.author.name)
-        # logging.debug('Comment text: "%s"', comm.body)
-
-        if not marks_as_solved(comm):
-            logging.info('Comment does not mark issue as solved')
+        if comm.author == reddit.user.me():
+            logging.info('Comment was posted by this bot')
+            continue
+        if comm.author.name == reddit.user.me().name:
+            logging.info('Comment was posted by this bot name')
             continue
 
-        logging.info('Comment marks issues as solved')
+        logging.info('Found comment')
+
+        # TODO more debug info about comment
+        logging.debug('Comment author: "%s"', comm.author.name)
+        logging.debug('Comment text: "%s"', comm.body)
+
+        if not marks_as_solved(comm):
+            # Skip this "!solved" comment
+            logging.info('Comment does not mark issue as solved')
+            continue
+        logging.info('Comment marks issue as solved')
 
         if is_mod_comment(comm):
             logging.info('Comment was submitted by mod')
-        elif not is_first_solution(comm):
+        elif is_first_solution(comm):
+            logging.info('Comment is the first to mark the issue as solved')
+        else:
             # Skip this "!solved" comment
             logging.info('Comment is NOT the first to mark the issue as solved')
             continue
-
-        logging.info('Comment is the first to mark the issue as solved')
         log_solution_info(comm)
 
         solver = find_solver(comm)
@@ -122,7 +125,7 @@ def monitor_comments(subreddit, db, levels, cfg):
         try:
             comm.reply(reply_body)
             logging.info('Replied to the comment')
-            # logging.debug('Reply body: %s', reply_body)
+            logging.debug('Reply body: %s', reply_body)
         except praw.exceptions.APIException as e:
             logging.error('Unable to reply to comment: %s', e)
             db.remove_point(solver)
@@ -147,22 +150,85 @@ def monitor_comments(subreddit, db, levels, cfg):
 
 ### Reddit Comment Functions ###
 
+SolutionResponseRule = namedtuple('SolutionResponseRule',
+                                  'description success_msg failure_msg check')
+
+OP_RESPONSE_RULES = [
+    SolutionResponseRule(
+        'user "solved" pattern',
+        'Comment contains user "solved" pattern',
+        'Comment does not contain user "solved" pattern',
+        lambda c: SOLVED_PATTERN.search(c.body),
+    ),
+    SolutionResponseRule(
+        'is a reply (not top-level)',
+        'Comment is a reply to another comment',
+        'Comment is a top-level comment',
+        lambda c: not c.is_root,
+    ),
+    SolutionResponseRule(
+        'author is OP',
+        'Comment author is submission OP',
+        'Comment author is not submission OP',
+        lambda c: c.is_submitter,
+    ),
+    SolutionResponseRule(
+        "OP can't solve own problem",
+        'Submission OP is different from solution author',
+        'Submission OP is marking own comment as solution',
+        lambda c: not c.is_root and not c.parent().is_submitter,
+    ),
+]
+
+MOD_RESPONSE_RULES = [
+    SolutionResponseRule(
+        'contains mod "solved" pattern',
+        'Comment contains mod "solved" pattern',
+        'Comment does not contain mod "solved" pattern',
+        lambda c: MOD_SOLVED_PATTERN.search(c.body),
+    ),
+    SolutionResponseRule(
+        'is a reply (not top-level)',
+        'Comment is a reply to another comment',
+        'Comment is a top-level comment',
+        lambda c: not c.is_root,
+    ),
+    SolutionResponseRule(
+        'author is mod',
+        'Comment author is a mod',
+        'Comment author is not a mod',
+        # TODO Initialize rules in a function so that they can include other
+        # functions
+        lambda c: is_mod_comment(c),
+    ),
+]
+
+# GENERAL_RESPONSE_RULES = []
+
+
+def check_rules(rules, comment):
+    all_rules_passed = True
+    for rule in rules:
+        rule_passed = rule.check(comment)
+        logging.info(rule.success_msg if rule_passed else rule.failure_msg)
+        all_rules_passed = all_rules_passed and rule_passed
+    return all_rules_passed
+
 
 def marks_as_solved(comment):
     """Return True if the comment meets the criteria for marking the submission
     as solved, False otherwise.
     """
-    op_resp_to_solver = (not comment.is_root
-                         and comment.is_submitter
-                         and not comment.parent().is_submitter
-                         and SOLVED_PAT.search(comment.body))
+    # TODO should enforce that only one or the other can pass?
+    op_rules_pass = check_rules(OP_RESPONSE_RULES, comment)
+    if op_rules_pass:
+        logging.info('OP marking submission as solved')
 
-    # Mod can only used MOD_SOLVED_PAT on any post, including their own
-    mod_resp_to_solver = (not comment.is_root
-                          and comment.subreddit.moderator(redditor=comment.author)
-                          and MOD_SOLVED_PAT.search(comment.body))
+    mod_rules_pass = check_rules(MOD_RESPONSE_RULES, comment)
+    if mod_rules_pass:
+        logging.info('Mod marking submission as solved')
 
-    return op_resp_to_solver or mod_resp_to_solver
+    return op_rules_pass or mod_rules_pass
 
 
 def is_mod_comment(comment):
@@ -188,10 +254,11 @@ def is_first_solution(solved_comment):
 
 def find_solver(solved_comment):
     """Determine the redditor responsible for solving the question."""
+    # TODO plz make this better someday
     return solved_comment.parent().author
 
 
-### Print Functions ###
+### Print & Logging Functions ###
 
 
 def print_separator_line():
@@ -220,8 +287,5 @@ def log_solution_info(comm):
     logging.debug('Solution comment:')
     logging.debug('Author: %s', comm.parent().author.name)
     logging.debug('Body:   %s', comm.parent().body)
-    logging.debug('Comment marking solution as solved:')
-    logging.debug('Author: %s', comm.author.name)
-    logging.debug('Body:   %s', comm.body)
 
 
