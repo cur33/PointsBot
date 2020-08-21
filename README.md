@@ -17,6 +17,10 @@ subreddit and awards points to the user responsible for the solution.
 This bot was conceived as a response to
 [this request](https://www.reddit.com/r/RequestABot/comments/emdeim/expert_level_bot_coding/).
 
+For more information about running bots for Reddit made with the Python
+programming language,
+[see this pinned post in r/RequestABot](https://www.reddit.com/r/RequestABot/comments/cyll80/a_comprehensive_guide_to_running_your_reddit_bot/).
+
 The bot will award a point to a redditor when the OP of a submission includes
 "!Solved" or "!solved" somewhere in a reply to the redditor's comment on that
 submission.  These points will allow the redditor to advance to different
