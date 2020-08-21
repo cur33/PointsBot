@@ -43,13 +43,7 @@ awarded for each submission.
 
 ### Basic Installation
 
-These are the instructions for simply using the bot without needing to edit the
-code. These instructions are best suited for users with less technical
-experience.
-
-Go the the [releases page](https://github.com/cur33/PointsBot/releases) for this
-project, then download and unzip the latest release. Make sure you pick the
-release best suited for your machine & operating system.
+**IN PROGRESS**
 
 ### Advanced Installation
 
@@ -159,13 +153,7 @@ TOML syntax used for the file can be found on
 
 ### Basic Usage
 
-Follow these instructions if you downloaded the bot from the releases page in
-the [Installation](#installation) step above.
-
-In the unzipped folder, double-click on the `PointsBot.exe` file. It will open a
-command prompt that will ask you for any additional information it may require.
-You will *not* need any knowledge of the command prompt for your operating
-system to interact with the bot.
+**IN PROGRESS**
 
 ### Advanced Usage
 
