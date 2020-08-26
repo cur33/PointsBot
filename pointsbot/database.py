@@ -104,4 +104,3 @@ class Database:
 
         return points
 
-

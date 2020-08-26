@@ -6,10 +6,17 @@ File-specific lists are in loose descending order of priority.
 
 n/a
 
+## Bugs
+
+* [ ] Users can get multiple points for same solution
+    - Scenario:
+        - OP comments !solved
+        - OP deletes !solved comment
+        - OP comments !solved again
+    - Hopefully this will be easily solved once db migrations are working
+
 ## General
 
-* [ ] Logging
-    * Especially when unable to handle a comment
 * [ ] Notifications
     * Let admins know if a comment can't be properly handled
     * Email preferable; could do Reddit message, too
@@ -17,6 +24,7 @@ n/a
 * [ ] Testing
     - Any PRAW model that inherits from `praw.PRAWBase` has a `parse` method
         that could perhaps be used to make fake objects for testing
+    - Add regression tests for comments, etc.?
 * [ ] GUI
     - [ ] Create a GUI for configuring and running the bot, and performing other jobs
         like adding or subtracting points for specific redditors
@@ -52,6 +60,7 @@ n/a
 
 ### bot.py
 
+* [ ] (Maybe) sanitize input text?
 * [ ] Now that the date of each solution is being stored, can check for missed
     submissions each time the bot is run by searching subreddit history until
     last solution found

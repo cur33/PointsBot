@@ -191,4 +191,3 @@ def interactive_config(dest):
         toml.dump(configvals, f)
     print('#' * 80 + f'\nConfig settings saved to {dest}\n' + '#' * 80)
 
-

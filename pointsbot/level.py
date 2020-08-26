@@ -40,4 +40,3 @@ def user_level_info(points, levels):
 def is_max_level(level_info):
     return not level_info.next
 
-

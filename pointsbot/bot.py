@@ -47,21 +47,26 @@ def run():
                                  password=cfg.password,
                                  user_agent=USER_AGENT)
             logging.info('Connected to Reddit as %s', reddit.user.me())
-            if not reddit.read_only:
-                logging.info('Has write access to Reddit')
-            else:
-                logging.warning('Has read-only access to Reddit')
+            access_type = 'read-only' if reddit.read_only else 'write'
+            logging.info(f'Has {access_type} access to Reddit')
+            # if not reddit.read_only:
+            #     logging.info('Has write access to Reddit')
+            # else:
+            #     logging.warning('Has read-only access to Reddit')
 
             subreddit = reddit.subreddit(cfg.subreddit)
             logging.info('Watching subreddit %s', subreddit.title)
-            if subreddit.moderator(redditor=reddit.user.me()):
-                logging.info('Is moderator for monitored subreddit')
-            else:
-                logging.warning('Is NOT moderator for monitored subreddit')
+            is_mod = subreddit.moderator(redditor=reddit.user.me())
+            logging.info(f'Is {"" if is_mod else "NOT "} moderator for subreddit')
+            # if subreddit.moderator(redditor=reddit.user.me()):
+            #     logging.info('Is moderator for monitored subreddit')
+            # else:
+            #     logging.warning('Is NOT moderator for monitored subreddit')
 
             monitor_comments(reddit, subreddit, db, levels, cfg)
+
         # Ignoring other potential exceptions for now, since we may not be able
-        # to recover from them as well as from this one
+        # to recover from them as well as from these ones
         except prawcore.exceptions.RequestException as e:
             logging.error('Unable to connect to Reddit')
             logging.error('Error message: %s', e)
@@ -75,7 +80,7 @@ def run():
 def monitor_comments(reddit, subreddit, db, levels, cfg):
     """Monitor new comments in the subreddit, looking for confirmed solutions."""
     # Passing pause_after=0 will bypass the internal exponential delay, but have
-    # to check if any comments are returned with each query
+    # to check if any comments are returned after each query
     for comm in subreddit.stream.comments(skip_existing=True, pause_after=0):
         if comm is None:
             continue
@@ -287,5 +292,4 @@ def log_solution_info(comm):
     logging.debug('Solution comment:')
     logging.debug('Author: %s', comm.parent().author.name)
     logging.debug('Body:   %s', comm.parent().body)
-
 

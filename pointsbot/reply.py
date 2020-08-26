@@ -153,4 +153,3 @@ def footer(feedback_url=None, scoreboard_url=None):
             #  '| [Feedback](https://forms.gle/m94aGjFQwGopqQ836) '
             #  '| [Source Code](https://github.com/cur33/PointsBot))')
 
-

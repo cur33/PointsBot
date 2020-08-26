@@ -2,6 +2,8 @@
 
 ## General
 
+* [X] Initial/Basic Logging
+    * Especially when unable to handle a comment
 ## File-Specific
 
 ### bot.py
