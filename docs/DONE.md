@@ -2,6 +2,8 @@
 
 ## General
 
+* [X] Initial/Basic Logging
+    * Especially when unable to handle a comment
 ## File-Specific
 
 ### bot.py
@@ -19,7 +21,7 @@
 
 ### config.py
 
-* [X] Change from `ini` to `toml `
+* [X] Change from `ini` to `toml`
 * [X] Consolidate `pointsbot.ini` and `praw.ini` into a single config file.
 * [X] Add option for flair_template_id
 * [X] Check for config file in a well-known location, e.g. `~` directory
@@ -30,6 +32,8 @@
         3. (Maybe) Finally, could look in the directory containing the source files
            (using `__file__`).
 * [X] Add interactive config scipt
+* [X] Switch from `toml` package to `tomlkit` package
+    - Preserves style, comments, etc.
 * ~~Fix titlecase problem with roman numerals~~
     - Only an issue with `ini` format
 * ~~Separate the development-handy config items into separate section~~

@@ -70,7 +70,7 @@ class SchemaVersion:
 class Database:
 
     #  SCHEMA_VERSION = '0.1.0'
-#
+
     #  SCHEMA = '''
         #  CREATE TABLE IF NOT EXISTS redditor_points (
             #  id TEXT UNIQUE NOT NULL,
@@ -104,8 +104,8 @@ class Database:
     @transaction
     def _migrate(self, schema_version, sql_statements):
         # TODO only works if arg is a SchemaVersion
-        #  if self.schema_version and self.schema_version >= schema_version:
-            #  return
+        # if self.schema_version and self.schema_version >= schema_version:
+            # return
 
         for stmt in sql_statements:
             try:
@@ -117,9 +117,9 @@ class Database:
     @transaction
     def _apply_any_migrations(self):
         # Assume database doesn't exist; do all migrations
-        #  if not self.schema_version:
+        # if not self.schema_version:
         migrations_to_do = migrations.MIGRATIONS
-        #  else:
+        # else:
         if self.schema_version:
             schema_string = str(self.schema_version)
             for ndx, migration in enumerate(migrations.MIGRATIONS):
@@ -132,14 +132,14 @@ class Database:
             for schema_version, sql_statements in migrations_to_do:
                 self._migrate(schema_version, sql_statements)
 
-        #  migration_ndx = 0
-        #  if self.schema_version:
-            #  schema_string = str(self.schema_version)
-            #  for ndx, migration in enumerate(migrations.MIGRATIONS):
-                #  if migration[0] == schema_string:
-                    #  # Add one to not repeat the migration for current schema
-                    #  migration_ndx = ndx + 1
-                    #  break
+        # migration_ndx = 0
+        # if self.schema_version:
+            # schema_string = str(self.schema_version)
+            # for ndx, migration in enumerate(migrations.MIGRATIONS):
+                # if migration[0] == schema_string:
+                    # # Add one to not repeat the migration for current schema
+                    # migration_ndx = ndx + 1
+                    # break
 
     ### Redditor Methods ###
 
@@ -314,5 +314,4 @@ class Database:
         }
         self.cursor.execute(stmt, params)
         return self.cursor.fetchone().rowcount
-
 
