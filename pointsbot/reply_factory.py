@@ -1,5 +1,3 @@
-# from . import level
-
 ### Globals ###
 
 # Progress bar symbols
@@ -14,47 +12,54 @@ EXCESS_SYMBOL_TITLE = 'a star'   # Used in comment body
 
 # Markdown metacharacters that might need to be escaped
 MARKDOWN_CHARS = ['_', '*', '#']
-###
-# TODO make this a ReplyFactory? pass in feedback & scoreboard URLs to the
-# ReplyFactory constructor, then pass in redditor, points, level_info each time
-# making a comment, ie probably make `make` or `build` a method of the factory
-###
 
-### Main Functions ###
+def get_factory(feedback_url=None, scoreboard_url=None):
+    def factory(redditor, points, level_info):
+        paras = [header()]
+
+        if points == 1:
+            paras.append(first_greeting(redditor))
+            if level_info.current and points == level_info.current.points:
+                paras.append(level_up(redditor,
+                                    level_info.current.name,
+                                    tag_user=False))
+        elif points > 1:
+            user_already_tagged = False
+
+            if level_info.current and points == level_info.current.points:
+                paras.append(level_up(redditor,
+                                    level_info.current.name,
+                                    tag_user=(not user_already_tagged)))
+                user_already_tagged = True
+
+            if points % EXCESS_POINTS == 0:
+                first_excess = (points == EXCESS_POINTS)
+                paras.append(new_excess_symbol(redditor,
+                                            first_excess=first_excess,
+                                            tag_user=(not user_already_tagged)))
+                user_already_tagged = True
+
+            if not user_already_tagged:
+                paras.append(normal_greeting(redditor))
+
+        paras.append(points_status(redditor, points, level_info))
+        paras.append(divider())
+        paras.append(footer(feedback_url=feedback_url, scoreboard_url=scoreboard_url))
+        return '\n\n'.join(paras)
+
+    return factory
 
 
-def make(redditor, points, level_info, feedback_url=None, scoreboard_url=None):
-    paras = [header()]
+# def get_factory():
+#     return ReplyFactory()
 
-    if points == 1:
-        paras.append(first_greeting(redditor))
-        if level_info.current and points == level_info.current.points:
-            paras.append(level_up(redditor,
-                                  level_info.current.name,
-                                  tag_user=False))
-    elif points > 1:
-        user_already_tagged = False
 
-        if level_info.current and points == level_info.current.points:
-            paras.append(level_up(redditor,
-                                  level_info.current.name,
-                                  tag_user=(not user_already_tagged)))
-            user_already_tagged = True
+# class ReplyFactory:
+#     pass
 
-        if points % EXCESS_POINTS == 0:
-            first_excess = (points == EXCESS_POINTS)
-            paras.append(new_excess_symbol(redditor,
-                                           first_excess=first_excess,
-                                           tag_user=(not user_already_tagged)))
-            user_already_tagged = True
 
-        if not user_already_tagged:
-            paras.append(normal_greeting(redditor))
-
-    paras.append(points_status(redditor, points, level_info))
-    paras.append(divider())
-    paras.append(footer(feedback_url=feedback_url, scoreboard_url=scoreboard_url))
-    return '\n\n'.join(paras)
+# class Reply:
+#     pass
 
 
 ### Comment Section Functions ###

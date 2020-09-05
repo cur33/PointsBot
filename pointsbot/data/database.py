@@ -8,6 +8,15 @@ import sqlite3 as sqlite
 
 from . import migrations
 
+### Singleton Methods ###
+
+# INSTANCE = None
+
+
+# def get_instance():
+#     pass
+
+
 ### Decorators ###
 
 
@@ -69,6 +78,42 @@ class SchemaVersion:
 
 class Database:
 
+    ### Singleton Methods ###
+
+    DBPATH = None
+    INSTANCE = None
+
+    @classmethod
+    def set_database_filepath(cls, dbpath):
+        cls.DBPATH = dbpath
+
+    @classmethod
+    def get_instance(cls):
+        if not cls.INSTANCE:
+            if not cls.DBPATH:
+                raise Exception # TODO
+            # cls.INSTANCE = cls(cls.DBPATH)
+            cls.INSTANCE = cls()
+            cls.INSTANCE.path = cls.DBPATH
+            cls.INSTANCE.conn = None
+            cls.INSTANCE.cursor = None
+            cls.INSTANCE.schema_version = None
+
+            if os.path.exists(cls.INSTANCE.path):
+                # TODO make schema_version a read-only property instead?
+                cls.INSTANCE._determine_schema_version()
+            cls.INSTANCE._apply_any_migrations()
+
+        return cls.INSTANCE
+
+    # @classmethod
+    # def get_instance(cls):
+    #     if not cls.INSTANCE:
+    #         if not cls.DBPATH:
+    #             raise Exception # TODO
+    #         cls.INSTANCE = cls(cls.DBPATH)
+    #     return cls.INSTANCE
+    
     #  SCHEMA_VERSION = '0.1.0'
 
     #  SCHEMA = '''
@@ -79,16 +124,18 @@ class Database:
         #  )
     #  '''
 
-    def __init__(self, dbpath):
-        self.path = dbpath
-        self.conn = None
-        self.cursor = None
-        self.schema_version = None
+    # def __init__(self, dbpath):
+    #     self.path = dbpath
+    #     self.conn = None
+    #     self.cursor = None
+    #     self.schema_version = None
 
-        if os.path.exists(self.path):
-            # TODO make schema_version a read-only property instead?
-            self._determine_schema_version()
-        self._apply_any_migrations()
+    #     if os.path.exists(self.path):
+    #         # TODO make schema_version a read-only property instead?
+    #         self._determine_schema_version()
+    #     self._apply_any_migrations()
+    def __init__(self):
+        pass
 
     # TODO make schema_version a read-only property instead
     @transaction

@@ -26,6 +26,13 @@ To ensure that a point is awarded to the correct user:
     that user, and then award them the point.
     - Honestly, this is probably overcomplicated and unnecessary, though.
 
+## Making the bot easier to configure
+
+Allow bot user to just specify a list of strings to recognize to trigger the bot's response. Allow user to specify whether case-sensitive. Ways to do this, with varying performance:
+* Just search each text for each keyword;
+* Use `re.compile()` for each keyword before searching (*may* be faster?); or
+* Build a binary search tree for all keywords for each action
+
 ## Multiple behaviors
 
 Implement the concept of actions, with a mapping between trigger keywords/patterns and actions. This will allow for multiple behaviors (eg mark as solved for one behavior, and just show points when summoned for another).
@@ -38,9 +45,5 @@ Maybe allow chains of actions. For example:
 5. Action 3: Add points
 6. Action 4: Reply
 
-## Making the bot easier to configure
-
-Allow bot user to just specify a list of strings to recognize to trigger the bot's response. Allow user to specify whether case-sensitive. Ways to do this, with varying performance:
-* Just search each text for each keyword;
-* Use `re.compile()` for each keyword before searching (*may* be faster?); or
-* Build a binary search tree for all keywords for each action
+Examples:
+1. 

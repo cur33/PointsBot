@@ -13,7 +13,7 @@ LevelInfo = namedtuple('LevelInfo', 'previous current next')
 
 
 def user_level_info(points, levels):
-    """Return a tuple the user's previous (plural), current, and next levels.
+    """Return a tuple of the user's previous (plural), current, and next levels.
 
     If the user has yet to reach the first level, return ([], None, <first
     level>).
