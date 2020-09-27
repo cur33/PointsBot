@@ -4,8 +4,8 @@ from ..data import database as db
 class Model:
 
     def get(self):
-        pass
+        raise NotImplementedError
 
     def save(self):
-        pass
+        raise NotImplementedError
 

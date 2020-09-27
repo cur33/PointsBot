@@ -50,18 +50,6 @@ def get_factory(feedback_url=None, scoreboard_url=None):
     return factory
 
 
-# def get_factory():
-#     return ReplyFactory()
-
-
-# class ReplyFactory:
-#     pass
-
-
-# class Reply:
-#     pass
-
-
 ### Comment Section Functions ###
 
 

@@ -63,6 +63,8 @@ class Config:
     DEFAULT_DB_NAME = 'pointsbot.db'
     DEFAULT_LOG_NAME = 'pointsbot.log'
 
+    USER_AGENT = 'PointsBot (by u/GlipGlorp7)'
+
     def __init__(self, filepath, subreddit, client_id, client_secret, username,
                  password, levels, database_path=None, log_path=None,
                  feedback_url=None, scoreboard_url=None):

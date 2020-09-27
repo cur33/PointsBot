@@ -45,5 +45,33 @@ Maybe allow chains of actions. For example:
 5. Action 3: Add points
 6. Action 4: Reply
 
-Examples:
-1. 
+### Comment is by bot
+* If
+    * comment author is bot
+* Then
+    * skip comment
+```
+if comment author is bot:
+    skip comment
+```
+
+### Comment marks submission as solved
+* If
+    * comment body contains "solved" string
+        * AND comment is not a top-level comment on the submission
+        * AND comment author is submission author
+        * AND submission author is not marking their own comment as the solution
+    * OR
+        * comment body contains mod "solved" string
+        * AND comment is not a top-level submission
+```
+if comment body is not a top-level comment:
+    if comment body contains mod 'solved' string
+            and comment author is mod:
+        award comment point to solver (if one is found)
+    elif comment body contains 'solved' string
+            and comment author is submission author
+            and submission author is not marking their own comment as the solution:
+        award comment point to solver (if one is found)
+```
+
