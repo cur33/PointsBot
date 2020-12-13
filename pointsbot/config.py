@@ -123,6 +123,8 @@ class Config:
                 'flair_template_id': level.flair_template_id,
             })
 
+        obj['tags'] = ','.join(obj['tags'])
+
         with open(self._filepath, 'w') as f:
             toml.dump(obj, f)
 
