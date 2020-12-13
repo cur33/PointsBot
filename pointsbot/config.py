@@ -43,7 +43,7 @@ class Config:
 
     def __init__(self, filepath, subreddit, client_id, client_secret, username,
                  password, levels, database_path=None, log_path=None,
-                 feedback_url=None, scoreboard_url=None):
+                 feedback_url=None, scoreboard_url=None, tag_string=None):
         self._filepath = filepath
         self._dirname = os.path.dirname(filepath)
 
@@ -71,6 +71,10 @@ class Config:
         self.password = password
 
         self.levels = levels
+        if tag_string is None:
+            self.tags = None
+        else:
+            self.tags = tag_string.lower().split(",")
 
     @classmethod
     def from_toml(cls, filepath):
@@ -105,6 +109,7 @@ class Config:
             log_path=logpath,
             feedback_url=obj['links']['feedback'],
             scoreboard_url=obj['links']['scoreboard'],
+            tag_string=obj['core']['valid_tags'],
         )
 
     def save(self):

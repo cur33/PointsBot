@@ -17,7 +17,8 @@ USER_AGENT = 'PointsBot (by u/GlipGlorp7)'
 # The pattern that determines whether a post is marked as solved
 # Could also use re.IGNORECASE flag instead
 SOLVED_PATTERN = re.compile('![Ss]olved')
-MOD_SOLVED_PATTERN = re.compile('/[Ss]olved')
+MOD_SOLVED_PATTERN = re.compile('/[Ss]olved|')
+MOD_REMOVE_PATTERN = re.compile('/[Rr]emove[Pp]oint')
 
 ### Main Function ###
 
@@ -97,25 +98,34 @@ def monitor_comments(reddit, subreddit, db, levels, cfg):
         logging.debug('Comment author: "%s"', comm.author.name)
         logging.debug('Comment text: "%s"', comm.body)
 
-        if not marks_as_solved(comm):
+        mark_as_solved, remove_point, is_mod_command = marks_as_solved(comm)
+        if mark_as_solved:
+            logging.info('Comment marks issue as solved')
+        elif remove_point:
+            logging.info('Comment removes point')
+        else:
             # Skip this "!solved" comment
-            logging.info('Comment does not mark issue as solved')
+            logging.info('Comment does not have a valid command')
             continue
-        logging.info('Comment marks issue as solved')
 
-        if is_mod_comment(comm):
+        if is_mod_command:
             logging.info('Comment was submitted by mod')
-        elif is_first_solution(comm):
-            logging.info('Comment is the first to mark the issue as solved')
+        elif is_valid_tag(comm, cfg.tags) and is_valid_flair(comm):
+            logging.info('Comment has a valid tag and is not already marked as solved')
         else:
             # Skip this "!solved" comment
             logging.info('Comment is NOT the first to mark the issue as solved')
             continue
-        log_solution_info(comm)
+        if not remove_point:
+            log_solution_info(comm)
 
         solver = find_solver(comm)
-        db.add_point(solver)
-        logging.info('Added point for user "%s"', solver.name)
+        if remove_point:
+            db.remove_point(solver)
+            logging.info('Removed point for user "%s"', solver.name)
+        else:
+            db.add_point(solver)
+            logging.info('Added point for user "%s"', solver.name)
 
         points = db.get_points(solver)
         logging.info('Total points for user "%s": %d', solver.name, points)
@@ -126,15 +136,20 @@ def monitor_comments(reddit, subreddit, db, levels, cfg):
                                 points,
                                 level_info,
                                 feedback_url=cfg.feedback_url,
-                                scoreboard_url=cfg.scoreboard_url)
+                                scoreboard_url=cfg.scoreboard_url,
+                                is_add=not remove_point)
         try:
             comm.reply(reply_body)
             logging.info('Replied to the comment')
             logging.debug('Reply body: %s', reply_body)
         except praw.exceptions.APIException as e:
             logging.error('Unable to reply to comment: %s', e)
-            db.remove_point(solver)
-            logging.error('Removed point that was just awarded to user "%s"', solver.name)
+            if remove_point:
+                db.add_point(solver)
+                logging.error('Re-added point that was just removed from user "%s"', solver.name)
+            else:
+                db.remove_point(solver)
+                logging.error('Removed point that was just awarded to user "%s"', solver.name)
             logging.error('Skipping comment')
             continue
 
@@ -208,6 +223,28 @@ MOD_RESPONSE_RULES = [
     ),
 ]
 
+MOD_REMOVE_RULES = [
+    SolutionResponseRule(
+        'contains mod "removepoint" pattern',
+        'Comment contains mod "removepoint" pattern',
+        'Comment does not contain mod "removepoint" pattern',
+        lambda c: MOD_REMOVE_PATTERN.search(c.body),
+    ),
+    SolutionResponseRule(
+        'is a reply (not top-level)',
+        'Comment is a reply to another comment',
+        'Comment is a top-level comment',
+        lambda c: not c.is_root,
+    ),
+    SolutionResponseRule(
+        'author is mod',
+        'Comment author is a mod',
+        'Comment author is not a mod',
+        # functions
+        lambda c: is_mod_comment(c),
+    ),
+]
+
 # GENERAL_RESPONSE_RULES = []
 
 
@@ -233,28 +270,37 @@ def marks_as_solved(comment):
     if mod_rules_pass:
         logging.info('Mod marking submission as solved')
 
-    return op_rules_pass or mod_rules_pass
+    mod_remove_pass = check_rules(MOD_REMOVE_RULES, comment)
+    if mod_remove_pass:
+        logging.info('Mod removing point')
+
+    return op_rules_pass or mod_rules_pass, mod_remove_pass, mod_rules_pass or mod_remove_pass
 
 
 def is_mod_comment(comment):
     return comment.subreddit.moderator(redditor=comment.author)
 
 
-def is_first_solution(solved_comment):
-    """Return True if this solved comment is the first, False otherwise."""
-    # Retrieve any comments hidden by "more comments" by passing limit=0
-    submission = solved_comment.submission
-    submission.comments.replace_more(limit=0)
+def is_valid_tag(solved_comment, valid_tags):
+    """Return True if this comments post has one of the allowed tags, False otherwise.
+    If there aren't any tags configured, skip this check"""
+    if valid_tags is None:
+        return True
 
-    # Search the flattened comments tree
-    for comment in submission.comments.list():
-        if (comment.id != solved_comment.id
-                and marks_as_solved(comment)
-                and comment.created_utc < solved_comment.created_utc):
-            # There is an earlier comment for the same submission
-            # already marked as a solution by the OP
-            return False
-    return True
+    submission_title = solved_comment.submission.title.lower()
+
+    for valid_tag in valid_tags:
+        if f"[{valid_tag}]" in submission_title:
+            return True
+
+    return False
+
+
+def is_valid_flair(solved_comment):
+    """Return True if this comment's post doesn't already have the Solved flair, False otherwise."""
+    submission = solved_comment.submission
+
+    return submission.link_flair_text.lower() != "solved"
 
 
 def find_solver(solved_comment):

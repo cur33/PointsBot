@@ -21,10 +21,13 @@ EXCESS_SYMBOL_TITLE = 'a star'   # Used in comment body
 ### Main Functions ###
 
 
-def make(redditor, points, level_info, feedback_url=None, scoreboard_url=None):
-    paras = [header()]
+def make(redditor, points, level_info, feedback_url=None, scoreboard_url=None, is_add=True):
+    if is_add:
+        paras = [solved_header()]
+    else:
+        paras = [remove_header()]
 
-    if points == 1:
+    if points <= 1:
         paras.append(first_greeting(redditor))
         if level_info.current and points == level_info.current.points:
             paras.append(level_up(redditor,
@@ -58,8 +61,12 @@ def make(redditor, points, level_info, feedback_url=None, scoreboard_url=None):
 ### Comment Section Functions ###
 
 
-def header():
+def solved_header():
     return 'Thanks! Post marked as Solved!'
+
+
+def remove_header():
+    return 'Point removed.'
 
 
 def first_greeting(redditor):
@@ -137,16 +144,16 @@ def divider():
 
 
 def footer(feedback_url=None, scoreboard_url=None):
-    footer_sections = ['Bot maintained by GlipGlorp7']
+    footer_sections = ['^(Bot maintained by GlipGlorp7)']
     if scoreboard_url:
         # https://points.minecrafthelp.co.uk
-        footer_sections.append(f'[Scoreboard]({scoreboard_url})')
+        footer_sections.append(f'[^Scoreboard]({scoreboard_url})')
     if feedback_url:
         # https://forms.gle/m94aGjFQwGopqQ836
-        footer_sections.append(f'[Feedback]({feedback_url})')
-    footer_sections.append('[Source Code](https://github.com/cur33/PointsBot)')
+        footer_sections.append(f'[^Feedback]({feedback_url})')
+    footer_sections.append('[^Source ^Code](https://github.com/cur33/PointsBot)')
 
-    return '^(' + ' | '.join(footer_sections) + ')'
+    return ' ^| '.join(footer_sections)
 
     #  return ('^(Bot maintained by GlipGlorp7 '
             #  '| [Scoreboard](https://points.minecrafthelp.co.uk) '
