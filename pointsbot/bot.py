@@ -17,7 +17,7 @@ USER_AGENT = 'PointsBot (by u/GlipGlorp7)'
 # The pattern that determines whether a post is marked as solved
 # Could also use re.IGNORECASE flag instead
 SOLVED_PATTERN = re.compile('![Ss]olved')
-MOD_SOLVED_PATTERN = re.compile('/[Ss]olved|')
+MOD_SOLVED_PATTERN = re.compile('/[Ss]olved')
 MOD_REMOVE_PATTERN = re.compile('/[Rr]emove[Pp]oint')
 
 ### Main Function ###
