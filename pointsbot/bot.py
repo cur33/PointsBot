@@ -29,7 +29,7 @@ def run():
 
     cfg = config.load()
 
-    file_handler = RotatingFileHandler(cfg.log_path, mode='w', maxBytes=1024*1024, backupCount=3, encoding='utf-8')
+    file_handler = RotatingFileHandler(cfg.log_path, maxBytes=1024*1024, backupCount=3, encoding='utf-8')
     console_handler = logging.StreamHandler(sys.stderr)
     console_handler.setLevel(logging.INFO)
 
