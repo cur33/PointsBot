@@ -27,32 +27,35 @@ def make(redditor, points, level_info, feedback_url=None, scoreboard_url=None, i
     else:
         paras = [remove_header()]
 
-    if points <= 1:
-        paras.append(first_greeting(redditor))
-        if level_info.current and points == level_info.current.points:
-            paras.append(level_up(redditor,
-                                  level_info.current.name,
-                                  tag_user=False))
-    elif points > 1:
-        user_already_tagged = False
+    if level_info is None:
+        paras.append(no_points(redditor))
+    else:
+        if points <= 1:
+            paras.append(first_greeting(redditor))
+            if level_info.current and points == level_info.current.points:
+                paras.append(level_up(redditor,
+                                      level_info.current.name,
+                                      tag_user=False))
+        elif points > 1:
+            user_already_tagged = False
 
-        if level_info.current and points == level_info.current.points:
-            paras.append(level_up(redditor,
-                                  level_info.current.name,
-                                  tag_user=(not user_already_tagged)))
-            user_already_tagged = True
+            if level_info.current and points == level_info.current.points:
+                paras.append(level_up(redditor,
+                                      level_info.current.name,
+                                      tag_user=(not user_already_tagged)))
+                user_already_tagged = True
 
-        if points % EXCESS_POINTS == 0:
-            first_excess = (points == EXCESS_POINTS)
-            paras.append(new_excess_symbol(redditor,
-                                           first_excess=first_excess,
-                                           tag_user=(not user_already_tagged)))
-            user_already_tagged = True
+            if points % EXCESS_POINTS == 0:
+                first_excess = (points == EXCESS_POINTS)
+                paras.append(new_excess_symbol(redditor,
+                                               first_excess=first_excess,
+                                               tag_user=(not user_already_tagged)))
+                user_already_tagged = True
 
-        if not user_already_tagged:
-            paras.append(normal_greeting(redditor))
+            if not user_already_tagged:
+                paras.append(normal_greeting(redditor))
 
-    paras.append(points_status(redditor, points, level_info))
+        paras.append(points_status(redditor, points, level_info))
     paras.append(divider())
     paras.append(footer(feedback_url=feedback_url, scoreboard_url=scoreboard_url))
     return '\n\n'.join(paras)
@@ -67,6 +70,10 @@ def solved_header():
 
 def remove_header():
     return 'Point removed.'
+
+
+def no_points(redditor):
+    return f'u/{redditor.name} now has no points'
 
 
 def first_greeting(redditor):

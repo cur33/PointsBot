@@ -1,4 +1,5 @@
 import logging
+from logging.handlers import RotatingFileHandler
 import os
 import os.path
 import re
@@ -28,7 +29,7 @@ def run():
 
     cfg = config.load()
 
-    file_handler = logging.FileHandler(cfg.log_path, 'w', 'utf-8')
+    file_handler = RotatingFileHandler(cfg.log_path, mode='w', maxBytes=1024*1024, backupCount=3, encoding='utf-8')
     console_handler = logging.StreamHandler(sys.stderr)
     console_handler.setLevel(logging.INFO)
 
@@ -129,7 +130,10 @@ def monitor_comments(reddit, subreddit, db, levels, cfg):
 
         points = db.get_points(solver)
         logging.info('Total points for user "%s": %d', solver.name, points)
-        level_info = level.user_level_info(points, levels)
+        if points > 0:
+            level_info = level.user_level_info(points, levels)
+        else:
+            level_info = None
 
         # Reply to the comment marking the submission as solved
         reply_body = reply.make(solver,
@@ -154,8 +158,8 @@ def monitor_comments(reddit, subreddit, db, levels, cfg):
             continue
 
         # Check if (non-mod) user flair should be updated to new level
-        lvl = level_info.current
-        if lvl and lvl.points == points:
+        if level_info and level_info.current and level_info.current.points == points:
+            lvl = level_info.current
             logging.info('User reached level: %s', lvl.name)
             if not subreddit.moderator(redditor=solver):
                 logging.info('User is not mod; setting flair')
