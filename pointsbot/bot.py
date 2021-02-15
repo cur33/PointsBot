@@ -16,9 +16,8 @@ from . import config, database, level, reply
 USER_AGENT = 'PointsBot (by u/GlipGlorp7)'
 
 # The pattern that determines whether a post is marked as solved
-# Could also use re.IGNORECASE flag instead
-SOLVED_PATTERN = re.compile('![Ss]olved')
-MOD_SOLVED_PATTERN = re.compile('/[Ss]olved')
+SOLVED_PATTERN = re.compile('![Hh]elped')
+MOD_SOLVED_PATTERN = re.compile('/[Hh]elped')
 MOD_REMOVE_PATTERN = re.compile('/[Rr]emove[Pp]oint')
 
 ### Main Function ###
@@ -51,19 +50,11 @@ def run():
             logging.info('Connected to Reddit as %s', reddit.user.me())
             access_type = 'read-only' if reddit.read_only else 'write'
             logging.info(f'Has {access_type} access to Reddit')
-            # if not reddit.read_only:
-            #     logging.info('Has write access to Reddit')
-            # else:
-            #     logging.warning('Has read-only access to Reddit')
 
             subreddit = reddit.subreddit(cfg.subreddit)
             logging.info('Watching subreddit %s', subreddit.title)
             is_mod = subreddit.moderator(redditor=reddit.user.me())
             logging.info(f'Is {"" if is_mod else "NOT "} moderator for subreddit')
-            # if subreddit.moderator(redditor=reddit.user.me()):
-            #     logging.info('Is moderator for monitored subreddit')
-            # else:
-            #     logging.warning('Is NOT moderator for monitored subreddit')
 
             monitor_comments(reddit, subreddit, db, levels, cfg)
 
@@ -94,8 +85,6 @@ def monitor_comments(reddit, subreddit, db, levels, cfg):
             continue
 
         logging.info('Found comment')
-
-        # TODO more debug info about comment
         logging.debug('Comment author: "%s"', comm.author.name)
         logging.debug('Comment text: "%s"', comm.body)
 
@@ -111,21 +100,29 @@ def monitor_comments(reddit, subreddit, db, levels, cfg):
 
         if is_mod_command:
             logging.info('Comment was submitted by mod')
-        elif is_valid_tag(comm, cfg.tags) and is_valid_flair(comm):
-            logging.info('Comment has a valid tag and is not already marked as solved')
-        else:
-            # Skip this "!solved" comment
-            logging.info('Comment is NOT the first to mark the issue as solved')
-            continue
+        elif is_valid_tag(comm, cfg.tags):
+            logging.info('Comment has a valid tag')
+        # elif is_valid_tag(comm, cfg.tags) and is_valid_flair(comm):
+        #     logging.info('Comment has a valid tag and is not already marked as solved')
+        # else:
+        #     # Skip this "!solved" comment
+        #     logging.info('Comment is NOT the first to mark the issue as solved')
+        #     continue
         if not remove_point:
             log_solution_info(comm)
 
-        solver = find_solver(comm)
+        # solver = find_solver(comm)
+        solver, solution_comment = find_solver_and_comment(comm)
         if remove_point:
-            db.remove_point(solver)
+            # db.remove_point(solver)
+            # db.remove_point_for_solution(submission, solver, solution_comment, remover, removed_by_comment)
+            # db.remove_point_for_solution(comm.submission, )
+            db.soft_remove_point_for_solution(comm.submission, solver, comm.author, comm)
             logging.info('Removed point for user "%s"', solver.name)
         else:
-            db.add_point(solver)
+            # db.add_point(solver)
+            # db.add_point_for_solution(submission, solver, solution_comment, chooser, chosen_by_comment)
+            db.add_point_for_solution(comm.submission, solver, solution_comment, comm.author, comm)
             logging.info('Added point for user "%s"', solver.name)
 
         points = db.get_points(solver)
@@ -149,10 +146,12 @@ def monitor_comments(reddit, subreddit, db, levels, cfg):
         except praw.exceptions.APIException as e:
             logging.error('Unable to reply to comment: %s', e)
             if remove_point:
-                db.add_point(solver)
+                # db.add_point(solver)
+                db.add_back_point_for_solution(comm.submission, solver)
                 logging.error('Re-added point that was just removed from user "%s"', solver.name)
             else:
-                db.remove_point(solver)
+                # db.remove_point(solver)
+                db.remove_point_and_delete_solution(comm.submission, solver)
                 logging.error('Removed point that was just awarded to user "%s"', solver.name)
             logging.error('Skipping comment')
             continue
@@ -244,7 +243,6 @@ MOD_REMOVE_RULES = [
         'author is mod',
         'Comment author is a mod',
         'Comment author is not a mod',
-        # functions
         lambda c: is_mod_comment(c),
     ),
 ]
@@ -300,17 +298,20 @@ def is_valid_tag(solved_comment, valid_tags):
     return False
 
 
-def is_valid_flair(solved_comment):
-    """Return True if this comment's post doesn't already have the Solved flair, False otherwise."""
-    submission = solved_comment.submission
+# def is_valid_flair(solved_comment):
+#     """Return True if this comment's post doesn't already have the Solved flair, False otherwise."""
+#     submission = solved_comment.submission
 
-    return submission.link_flair_text.lower() != "solved"
+#     return submission.link_flair_text.lower() != "solved"
 
 
-def find_solver(solved_comment):
+# def find_solver(solved_comment):
+def find_solver_and_comment(solved_comment)
     """Determine the redditor responsible for solving the question."""
     # TODO plz make this better someday
-    return solved_comment.parent().author
+    # return solved_comment.parent().author
+    solution_comment = solved_comment.parent()
+    return solution_comment.author, solution_comment
 
 
 ### Print & Logging Functions ###

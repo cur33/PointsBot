@@ -14,9 +14,9 @@ CONFIGPATH = os.path.join(DATADIR, 'pointsbot.toml')
 
 # Path to the sample config file
 # Unused for now
-SAMPLEPATH = os.path.abspath(os.path.join(os.path.dirname(__file__),
-                                          '..',
-                                          'pointsbot.sample.toml'))
+# SAMPLEPATH = os.path.abspath(os.path.join(os.path.dirname(__file__),
+#                                           '..',
+#                                           'pointsbot.sample.toml'))
 
 ### Primary Functions ###
 
@@ -115,7 +115,6 @@ class Config:
     def save(self):
         obj = deepcopy(vars(self))
         orig_levels, obj['levels'] = obj['levels'], []
-        # obj['levels'] = []
         for level in orig_levels:
             obj['levels'].append({
                 'name': level.name,
