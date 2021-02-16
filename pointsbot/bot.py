@@ -54,7 +54,7 @@ def run():
             subreddit = reddit.subreddit(cfg.subreddit)
             logging.info('Watching subreddit %s', subreddit.title)
             is_mod = subreddit.moderator(redditor=reddit.user.me())
-            logging.info(f'Is {"" if is_mod else "NOT "} moderator for subreddit')
+            logging.info(f'Is {"" if is_mod else "NOT "}moderator for subreddit')
 
             monitor_comments(reddit, subreddit, db, levels, cfg)
 
@@ -306,7 +306,7 @@ def is_valid_tag(solved_comment, valid_tags):
 
 
 # def find_solver(solved_comment):
-def find_solver_and_comment(solved_comment)
+def find_solver_and_comment(solved_comment):
     """Determine the redditor responsible for solving the question."""
     # TODO plz make this better someday
     # return solved_comment.parent().author
