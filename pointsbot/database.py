@@ -22,16 +22,17 @@ def transaction(func):
             self.cursor = self.conn.cursor()
             created_conn = True
 
-        try:
-            return_value = func(self, *args, **kwargs)
-        except Exception as e:
-            if self.conn.in_transaction:
-                self.conn.rollback()
-            if created_conn:
-                self.cursor.close()
-                self.conn.close()
-                self.cursor = self.conn = None
-            raise e
+        return_value = func(self, *args, **kwargs)
+        # try:
+        #     return_value = func(self, *args, **kwargs)
+        # except Exception as e:
+        #     if self.conn.in_transaction:
+        #         self.conn.rollback()
+        #     if created_conn:
+        #         self.cursor.close()
+        #         self.conn.close()
+        #         self.cursor = self.conn = None
+        #     raise e
 
         if self.conn.in_transaction:
             self.conn.commit()
@@ -51,10 +52,10 @@ def transaction(func):
 class DatabaseVersion:
 
     PRE_RELEASE_NAME_ORDER_NUMBER = {
-        None: None,
-        'alpha': 0,
-        'beta': 1,
-        'rc': 2
+        None: 0,
+        'alpha': 1,
+        'beta': 2,
+        'rc': 3
     }
 
     def __init__(self, major, minor, patch, pre_release_name=None, pre_release_number=None):
@@ -88,9 +89,10 @@ class DatabaseVersion:
 
 class Database:
 
-    # LATEST_VERSION = DatabaseVersion(0, 2, 0, None, None)
     LATEST_VERSION = DatabaseVersion(0, 2, 0)
 
+    # TODO now that I'm separating these statements by version, I could probably make these
+    # scripts instead of lists of individual statements...
     SCHEMA_VERSION_STATEMENTS = {
         DatabaseVersion(0, 1, 0): [
             '''
@@ -110,9 +112,6 @@ class Database:
                 pre_release_name TEXT,
                 pre_release_number INTEGER
             )
-            ''',
-            '''
-            INSERT OR IGNORE INTO bot_version (major, minor, patch) VALUES (0, 2, 0)
             ''',
             '''
             ALTER TABLE redditor_points RENAME TO redditor
@@ -160,6 +159,7 @@ class Database:
             self._run_migrations()
             logging.info('Successfully created database')
         else:
+            logging.info(f'Using existing database: {self.path}')
             current_version = self._get_current_version()
             if current_version != self.LATEST_VERSION:
                 logging.info('Newer database version exists; migrating...')
@@ -171,15 +171,34 @@ class Database:
         if not current_version:
             current_version = DatabaseVersion(0, 0, 0)
         logging.info(f'Current database version: {current_version}')
+
         versions = sorted(v for v in self.SCHEMA_VERSION_STATEMENTS if current_version < v)
         for v in versions:
             logging.info(f'Beginning migration to version: {v}...')
             for sql_stmt in self.SCHEMA_VERSION_STATEMENTS[v]:
                 self.cursor.execute(sql_stmt)
+            if DatabaseVersion(0, 1, 0) < v:
+                # Only update bot_version table starting at version 0.2.0
+                self.cursor.execute('DELETE FROM bot_version')
+                params = {
+                   'major': v.major,
+                   'minor': v.minor,
+                   'patch': v.patch,
+                   'pre_release_name': v.pre_release_name,
+                   'pre_release_number': v.pre_release_number
+                }
+                insert_stmt = '''
+                    INSERT INTO bot_version (major, minor, patch, pre_release_name, pre_release_number)
+                    VALUES (:major, :minor, :patch, :pre_release_name, :pre_release_number)
+                '''
+                self.cursor.execute(insert_stmt, params)
             logging.info(f'Successfully completed migration')
 
     @transaction
     def _get_current_version(self):
+        # self.cursor.execute('select * from sqlite_master')
+        # for row in self.cursor.fetchmany():
+        #     logging.info(tuple(row))
         self.cursor.execute("SELECT name FROM sqlite_master WHERE type = 'table' AND name = 'bot_version'")
         has_version_table = (self.cursor.rowcount == 1)
         if not has_version_table:
@@ -226,7 +245,7 @@ class Database:
         self.cursor.execute(select_stmt, {'submission_id': submission.id, 'author_id': solver.id})
         row = self.cursor.fetchone()
         return row and row['num_solutions'] > 0
-        
+
     def add_point_for_solution(self, submission, solver, solution_comment, chooser, chosen_by_comment):
         self._add_submission(submission)
         self._add_comment(solution_comment, solver)
@@ -251,8 +270,10 @@ class Database:
     @transaction
     def add_back_point_for_solution(self, submission, solver):
         self._update_points(solver, 1)
-        submission_rowid = self._get_rowid_from_reddit_id('submission', submission)
-        author_rowid = self._get_rowid_from_reddit_id('redditor', solver)
+        # submission_rowid = self._get_rowid_from_reddit_id('submission', submission)
+        # author_rowid = self._get_rowid_from_reddit_id('redditor', solver)
+        submission_rowid = self._get_submission_rowid(submission)
+        author_rowid = self._get_redditor_rowid(solver)
         params = {'submission_rowid': submission_rowid, 'author_rowid': author_rowid}
         update_stmt = '''
             UPDATE solution
@@ -261,12 +282,14 @@ class Database:
                 AND author_rowid = :author_rowid
         '''
         return self.cursor.execute(update_stmt, params)
-    
+
     @transaction
     def remove_point_and_delete_solution(self, submission, solver):
         params = {
-            'submission_rowid': self._get_rowid_from_reddit_id('submission', submission),
-            'author_rowid': self._get_rowid_from_reddit_id('redditor', solver)
+            # 'submission_rowid': self._get_rowid_from_reddit_id('submission', submission),
+            # 'author_rowid': self._get_rowid_from_reddit_id('redditor', solver)
+            'submission_rowid': self._get_submission_rowid(submission),
+            'author_rowid': self._get_redditor_rowid(solver)
         }
         delete_stmt = '''
             DELETE FROM solution
@@ -296,10 +319,29 @@ class Database:
 
     ### Private Methods ###
 
+    # @transaction
+    # def _get_rowid_from_reddit_id(self, table_name, reddit_object):
+    #     params = {'table_name': table_name, 'reddit_id': reddit_object.id}
+    #     self.cursor.execute('SELECT rowid FROM :table_name WHERE id = :reddit_id', params)
+    #     row = self.cursor.fetchone()
+    #     return row['rowid'] if row else None
+
+    # @transaction
+    def _get_submission_rowid(self, submission):
+        return self._get_rowid_from_reddit_id('SELECT rowid FROM submission WHERE id = :reddit_id', {'reddit_id': submission.id})
+        # self.cursor.execute('SELECT rowid FROM submission WHERE id = :reddit_id', {'reddit_id': submission.id})
+        # row = self.cursor.fetchone()
+        # return row['rowid'] if row else None
+
+    def _get_comment_rowid(self, comment):
+        return self._get_rowid_from_reddit_id('SELECT rowid FROM comment WHERE id = :reddit_id', {'reddit_id': comment.id})
+
+    def _get_redditor_rowid(self, redditor):
+        return self._get_rowid_from_reddit_id('SELECT rowid FROM redditor WHERE id = :reddit_id', {'reddit_id': redditor.id})
+
     @transaction
-    def _get_rowid_from_reddit_id(self, table_name, reddit_object):
-        params = {'table_name': table_name, 'reddit_id': reddit_object.id}
-        self.cursor.execute('SELECT rowid FROM :table_name WHERE id = :reddit_id', params)
+    def _get_rowid_from_reddit_id(self, stmt, params):
+        self.cursor.execute(stmt, params)
         row = self.cursor.fetchone()
         return row['rowid'] if row else None
 
@@ -328,10 +370,10 @@ class Database:
 
     @transaction
     def _add_solution(self, submission, solver, comment, chosen_by_comment):
-        submission_rowid = self._get_rowid_from_reddit_id('submission', submission)
-        author_rowid = self._get_rowid_from_reddit_id('redditor', solver)
-        comment_rowid = self._get_rowid_from_reddit_id('comment', comment)
-        chosen_by_comment_rowid = self._get_rowid_from_reddit_id('comment', chosen_by_comment)
+        submission_rowid = self._get_submission_rowid(submission)
+        author_rowid = self._get_redditor_rowid(solver)
+        comment_rowid = self._get_comment_rowid(comment)
+        chosen_by_comment_rowid = self._get_comment_rowid(chosen_by_comment)
         params = {
             'submission_rowid': submission_rowid,
             'author_rowid': author_rowid,
@@ -347,9 +389,9 @@ class Database:
 
     @transaction
     def _soft_remove_solution(self, submission, solver, removed_by_comment):
-        submission_rowid = self._get_rowid_from_reddit_id('submission', submission)
-        author_rowid = self._get_rowid_from_reddit_id('redditor', solver)
-        removed_by_comment_rowid = self._get_rowid_from_reddit_id('comment', removed_by_comment)
+        submission_rowid = self._get_submission_rowid(submission)
+        author_rowid = self._get_redditor_rowid(solver)
+        removed_by_comment_rowid = self._get_comment_rowid(removed_by_comment)
         params = {
             'submission_rowid': submission_rowid,
             'author_rowid': author_rowid,
@@ -387,6 +429,6 @@ class Database:
 ### Utility ###
 
 
-def reddit_datetime_to_iso(datetime):
-    return datetime.datetime.utcfromtimestamp(datetime).isoformat()
+def reddit_datetime_to_iso(timestamp):
+    return datetime.datetime.utcfromtimestamp(timestamp).isoformat()
 

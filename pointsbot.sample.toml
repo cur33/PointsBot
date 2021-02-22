@@ -1,6 +1,6 @@
 ################################################################################
 # Core
-# 
+#
 # These are the primary fields needed to run the bot.
 ################################################################################
 
@@ -11,25 +11,12 @@ valid_tags = "Java,Bedrock,Dungeons,Earth,Education,Legacy"
 
 
 ################################################################################
-# Filepaths
-#
-# Any filepaths needed by the bot. Can be relative or absolute paths, or just
-# filenames.
-################################################################################
-
-[filepaths]
-# The name of the SQLite database file to use. This value is optional; if not
-# specified, a default filepath will be used.
-database = ""
-
-
-################################################################################
 # Reddit Credentials
-# 
+#
 # See the bot documentation for more information about these fields.
 
 # Some of these fields are sensitive, so once these fields are provided, take
-# care not to upload or distribute this file through unsecure channels, or to
+# care not to upload or distribute this file through insecure channels, or to
 # public sites.
 ################################################################################
 
@@ -41,15 +28,43 @@ password = "REDACTED"
 
 
 ################################################################################
+# Filepaths
+#
+# Any filepaths needed by the bot. Can be relative or absolute paths, or just
+# filenames.
+################################################################################
+
+[filepaths]
+# The name/path of the SQLite database file to use. This value is optional; if not
+# specified, a default filepath will be used.
+database = ""
+# The name/path of the log file to use. This value is optional; if not specified,
+# a default filepath will be used.
+log = ""
+
+
+################################################################################
+# Links
+#
+# Any links used in the bot's reply. If you do not need to use these links,
+# leave these fields blank.
+################################################################################
+
+[links]
+feedback = ""
+scoreboard = ""
+
+
+################################################################################
 # User Levels
 #
 # These items represent the levels that contributors to the subreddit can
 # attain. To add a level, add another section with the format:
 #
 # [[levels]]
-# name = "<string>"
+# name = "<name inside quotes>"
 # points = <integer>
-# flair_template_id = "<string>"
+# flair_template_id = "<id inside quotes>"
 #
 # These fields are case-sensitive, so enter the level name exactly as you want
 # it to appear.
