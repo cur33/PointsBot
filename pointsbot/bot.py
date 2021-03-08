@@ -1,10 +1,8 @@
 import logging
-from logging.handlers import RotatingFileHandler
-import os
-import os.path
 import re
 import sys
 from collections import namedtuple
+from logging.handlers import RotatingFileHandler
 
 import praw
 import prawcore
@@ -19,6 +17,7 @@ USER_AGENT = 'PointsBot (by u/GlipGlorp7)'
 SOLVED_PATTERN = re.compile('![Hh]elped')
 MOD_SOLVED_PATTERN = re.compile('/[Hh]elped')
 MOD_REMOVE_PATTERN = re.compile('/[Rr]emove[Pp]oint')
+
 
 ### Main Function ###
 
@@ -102,26 +101,22 @@ def monitor_comments(reddit, subreddit, db, levels, cfg):
             logging.info('Comment was submitted by mod')
         elif is_valid_tag(comm, cfg.tags):
             logging.info('Comment has a valid tag')
-        # elif is_valid_tag(comm, cfg.tags) and is_valid_flair(comm):
-        #     logging.info('Comment has a valid tag and is not already marked as solved')
-        # else:
-        #     # Skip this "!solved" comment
-        #     logging.info('Comment is NOT the first to mark the issue as solved')
-        #     continue
-        if not remove_point:
-            log_solution_info(comm)
 
-        # solver = find_solver(comm)
         solver, solution_comment = find_solver_and_comment(comm)
+        solver_has_already_solved = db.has_already_solved_once(solution_comment.submission, solver)
+        if not remove_point and solver_has_already_solved:
+            logging.info('User "%s" has already solved this submission once', solver.name)
+            logging.info('No additional points awarded')
+            continue
+
         if remove_point:
-            # db.remove_point(solver)
-            # db.remove_point_for_solution(submission, solver, solution_comment, remover, removed_by_comment)
-            # db.remove_point_for_solution(comm.submission, )
             db.soft_remove_point_for_solution(comm.submission, solver, comm.author, comm)
             logging.info('Removed point for user "%s"', solver.name)
         else:
-            # db.add_point(solver)
-            # db.add_point_for_solution(submission, solver, solution_comment, chooser, chosen_by_comment)
+            logging.info('Submission solved')
+            logging.debug('Solution comment:')
+            logging.debug('Author: %s', solution_comment.author.name)
+            logging.debug('Body:   %s', solution_comment.body)
             db.add_point_for_solution(comm.submission, solver, solution_comment, comm.author, comm)
             logging.info('Added point for user "%s"', solver.name)
 
@@ -146,11 +141,9 @@ def monitor_comments(reddit, subreddit, db, levels, cfg):
         except praw.exceptions.APIException as e:
             logging.error('Unable to reply to comment: %s', e)
             if remove_point:
-                # db.add_point(solver)
                 db.add_back_point_for_solution(comm.submission, solver)
                 logging.error('Re-added point that was just removed from user "%s"', solver.name)
             else:
-                # db.remove_point(solver)
                 db.remove_point_and_delete_solution(comm.submission, solver)
                 logging.error('Removed point that was just awarded to user "%s"', solver.name)
             logging.error('Skipping comment')
@@ -220,8 +213,7 @@ MOD_RESPONSE_RULES = [
         'author is mod',
         'Comment author is a mod',
         'Comment author is not a mod',
-        # TODO Initialize rules in a function so that they can include other
-        # functions
+        # TODO Initialize rules in a function so that they can include other functions
         lambda c: is_mod_comment(c),
     ),
 ]
@@ -298,14 +290,6 @@ def is_valid_tag(solved_comment, valid_tags):
     return False
 
 
-# def is_valid_flair(solved_comment):
-#     """Return True if this comment's post doesn't already have the Solved flair, False otherwise."""
-#     submission = solved_comment.submission
-
-#     return submission.link_flair_text.lower() != "solved"
-
-
-# def find_solver(solved_comment):
 def find_solver_and_comment(solved_comment):
     """Determine the redditor responsible for solving the question."""
     # TODO plz make this better someday
@@ -336,11 +320,4 @@ def print_welcome_message():
     print('\nFuture updates will hopefully resolve these issues, but for the '
           "moment, this is what we've got to work with! :)\n")
     print_separator_line()
-
-
-def log_solution_info(comm):
-    logging.info('Submission solved')
-    logging.debug('Solution comment:')
-    logging.debug('Author: %s', comm.parent().author.name)
-    logging.debug('Body:   %s', comm.parent().body)
 

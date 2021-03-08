@@ -49,7 +49,6 @@ def transaction(func):
 ### Classes ###
 
 
-# @functools.total_ordering
 class DatabaseVersion:
 
     PRE_RELEASE_NAME_ORDER_NUMBER = {
@@ -67,17 +66,12 @@ class DatabaseVersion:
         self.pre_release_number = pre_release_number
 
     def __lt__(self, other):
-        # self_tuple = (self.major, self.minor, self.patch, self.PRE_RELEASE_NAME_ORDER_NUMBER[self.pre_release_name], self.pre_release_number)
-        # other_tuple = (other.major, other.minor, other.patch, self.PRE_RELEASE_NAME_ORDER_NUMBER[other.pre_release_name], other.pre_release_number)
         return self._to_tuple() < other._to_tuple()
 
     def __eq__(self, other):
-        # self_tuple = (self.major, self.minor, self.patch, self.PRE_RELEASE_NAME_ORDER_NUMBER[self.pre_release_name], self.pre_release_number)
-        # other_tuple = (other.major, other.minor, other.patch, self.PRE_RELEASE_NAME_ORDER_NUMBER[other.pre_release_name], other.pre_release_number)
         return self._to_tuple() == other._to_tuple()
 
     def __hash__(self):
-        # self_tuple = (self.major, self.minor, self.patch, self.PRE_RELEASE_NAME_ORDER_NUMBER[self.pre_release_name], self.pre_release_number)
         return hash(self._to_tuple())
 
     def _to_tuple(self):
@@ -209,9 +203,6 @@ class Database:
 
     @transaction
     def _get_current_version(self):
-        # self.cursor.execute('select * from sqlite_master')
-        # for row in self.cursor.fetchmany():
-        #     logging.info(tuple(row))
         self.cursor.execute("SELECT name FROM sqlite_master WHERE type = 'table' AND name = 'bot_version'")
         has_version_table = self.cursor.fetchone()
         if not has_version_table:
@@ -283,8 +274,6 @@ class Database:
     @transaction
     def add_back_point_for_solution(self, submission, solver):
         self._update_points(solver, 1)
-        # submission_rowid = self._get_rowid_from_reddit_id('submission', submission)
-        # author_rowid = self._get_rowid_from_reddit_id('redditor', solver)
         submission_rowid = self._get_submission_rowid(submission)
         author_rowid = self._get_redditor_rowid(solver)
         params = {'submission_rowid': submission_rowid, 'author_rowid': author_rowid}
@@ -299,8 +288,6 @@ class Database:
     @transaction
     def remove_point_and_delete_solution(self, submission, solver):
         params = {
-            # 'submission_rowid': self._get_rowid_from_reddit_id('submission', submission),
-            # 'author_rowid': self._get_rowid_from_reddit_id('redditor', solver)
             'submission_rowid': self._get_submission_rowid(submission),
             'author_rowid': self._get_redditor_rowid(solver)
         }
@@ -332,19 +319,8 @@ class Database:
 
     ### Private Methods ###
 
-    # @transaction
-    # def _get_rowid_from_reddit_id(self, table_name, reddit_object):
-    #     params = {'table_name': table_name, 'reddit_id': reddit_object.id}
-    #     self.cursor.execute('SELECT rowid FROM :table_name WHERE id = :reddit_id', params)
-    #     row = self.cursor.fetchone()
-    #     return row['rowid'] if row else None
-
-    # @transaction
     def _get_submission_rowid(self, submission):
         return self._get_rowid_from_reddit_id('SELECT rowid FROM submission WHERE id = :reddit_id', {'reddit_id': submission.id})
-        # self.cursor.execute('SELECT rowid FROM submission WHERE id = :reddit_id', {'reddit_id': submission.id})
-        # row = self.cursor.fetchone()
-        # return row['rowid'] if row else None
 
     def _get_comment_rowid(self, comment):
         return self._get_rowid_from_reddit_id('SELECT rowid FROM comment WHERE id = :reddit_id', {'reddit_id': comment.id})

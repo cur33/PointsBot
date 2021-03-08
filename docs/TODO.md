@@ -4,10 +4,7 @@ File-specific lists are in loose descending order of priority.
 
 ## Current
 
-* [ ] Change commands from !solved and /solved to !helped and /helped
-* [ ] Allow multiple users to be awarded points on a single post
-    * So just check whether each user is already awarded a point for a given post
-
+N / A
 ## Bugs
 
 * [ ] Users can get multiple points for same solution

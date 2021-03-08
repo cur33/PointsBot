@@ -4,6 +4,10 @@
 
 * [X] Initial/Basic Logging
     * Especially when unable to handle a comment
+* [X] Change commands from !solved and /solved to !helped and /helped
+* [X] Allow multiple users to be awarded points on a single post
+    * So just check whether each user is already awarded a point for a given post
+
 ## File-Specific
 
 ### bot.py

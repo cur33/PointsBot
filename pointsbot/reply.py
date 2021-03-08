@@ -158,12 +158,7 @@ def footer(feedback_url=None, scoreboard_url=None):
     if feedback_url:
         # https://forms.gle/m94aGjFQwGopqQ836
         footer_sections.append(f'[^Feedback]({feedback_url})')
-    footer_sections.append('[^Source ^Code](https://github.com/cur33/PointsBot)')
+    footer_sections.append('[^Source Code](https://github.com/cur33/PointsBot)')
 
     return ' ^| '.join(footer_sections)
-
-    #  return ('^(Bot maintained by GlipGlorp7 '
-            #  '| [Scoreboard](https://points.minecrafthelp.co.uk) '
-            #  '| [Feedback](https://forms.gle/m94aGjFQwGopqQ836) '
-            #  '| [Source Code](https://github.com/cur33/PointsBot))')
 
