@@ -4,15 +4,11 @@ File-specific lists are in loose descending order of priority.
 
 ## Current
 
-N / A
+N/A
+
 ## Bugs
 
-* [ ] Users can get multiple points for same solution
-    - Scenario:
-        - OP comments !solved
-        - OP deletes !solved comment
-        - OP comments !solved again
-    - Hopefully this will be easily solved once db migrations are working
+* [ ] For some posts, the bot adds a point to the database, but crashes before being able to reply
 
 ## General
 

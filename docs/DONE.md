@@ -8,6 +8,18 @@
 * [X] Allow multiple users to be awarded points on a single post
     * So just check whether each user is already awarded a point for a given post
 
+## Bugs
+* [X] mod /helped command doesn't work on one post (some posts?)
+    * the problem here seems to be the fact that when the bot adds a point for a solution comment, it
+    also adds the comment to the comments table without first checking whether it already exists
+    * while it is the case that we should only have one one `solution` row for each comment, it is potentially
+    possible that a comment could already be in the db when we add a solution for it, e.g. if the solution was
+    deleted (meaning the point was removed) and then we want to add it back, or something??
+* [X] bot crashes when a mod is trying to award a point to a solution on a deleted post
+    * the problem is that the new schema had the submission_id as a required foreign key, but a
+    deleted post will not have one
+    * according to them, since only mods will award points on deleted posts, it's fine if the fix is limited to mods
+
 ## File-Specific
 
 ### bot.py

@@ -301,10 +301,6 @@ def find_solver_and_comment(solved_comment):
 ### Print & Logging Functions ###
 
 
-def print_separator_line():
-    print('#' * 80)
-
-
 def print_welcome_message():
     print_separator_line()
     print('\n*** Welcome to PointsBot! ***\n')
@@ -320,4 +316,8 @@ def print_welcome_message():
     print('\nFuture updates will hopefully resolve these issues, but for the '
           "moment, this is what we've got to work with! :)\n")
     print_separator_line()
+
+
+def print_separator_line():
+    print('#' * 80)
 

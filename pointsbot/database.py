@@ -71,6 +71,7 @@ class DatabaseVersion:
     def __eq__(self, other):
         return self._to_tuple() == other._to_tuple()
 
+    # TODO return string instead?
     def __hash__(self):
         return hash(self._to_tuple())
 
@@ -96,7 +97,8 @@ class DatabaseVersion:
 
 class Database:
 
-    LATEST_VERSION = DatabaseVersion(0, 2, 0)
+    # TODO why store this separately; could compute from SCHEMA_VERSION_STATEMENTS
+    LATEST_VERSION = DatabaseVersion(0, 2, 1)
 
     # TODO now that I'm separating these statements by version, I could probably make these
     # scripts instead of lists of individual statements...
@@ -153,6 +155,53 @@ class Database:
                 PRIMARY KEY (submission_rowid, author_rowid)
             )
             '''
+        ],
+        DatabaseVersion(0, 2, 1): [
+            # Remove constraints on `solution.submission_rowid` via a temp table
+            '''
+            CREATE TABLE temp_solution (
+                author_rowid INTEGER NOT NULL,
+                comment_rowid INTEGER NOT NULL,
+                chosen_by_comment_rowid INTEGER NOT NULL,
+                removed_by_comment_rowid INTEGER,
+                submission_rowid INTEGER,
+                FOREIGN KEY (author_rowid) REFERENCES redditor (rowid) ON DELETE CASCADE,
+                FOREIGN KEY (comment_rowid) REFERENCES comment (rowid) ON DELETE CASCADE,
+                FOREIGN KEY (chosen_by_comment_rowid) REFERENCES comment (rowid) ON DELETE SET NULL,
+                FOREIGN KEY (removed_by_comment_rowid) REFERENCES comment (rowid) ON DELETE SET NULL,
+                FOREIGN KEY (submission_rowid) REFERENCES submission (rowid) ON DELETE SET NULL
+            )
+            ''',
+            '''
+            INSERT INTO temp_solution (author_rowid, comment_rowid, chosen_by_comment_rowid, removed_by_comment_rowid, submission_rowid)
+            SELECT author_rowid, comment_rowid, chosen_by_comment_rowid, removed_by_comment_rowid, submission_rowid
+            FROM solution
+            ''',
+            '''
+            DROP TABLE solution;
+            ''',
+            '''
+            ALTER TABLE temp_solution RENAME TO solution
+            ''',
+
+            # Remove constraints on `submission.author_id` via a temp table
+           '''
+           CREATE TABLE temp_submission (
+                id TEXT UNIQUE NOT NULL,
+                author_id TEXT
+           )
+           ''',
+           '''
+           INSERT INTO temp_submission (id, author_id)
+           SELECT id, author_id
+           FROM submission
+           ''',
+           '''
+           DROP TABLE submission
+           ''',
+           '''
+           ALTER TABLE temp_submission RENAME TO submission
+           '''
         ]
     }
 
@@ -252,8 +301,10 @@ class Database:
 
     def add_point_for_solution(self, submission, solver, solution_comment, chooser, chosen_by_comment):
         self._add_submission(submission)
-        self._add_comment(solution_comment, solver)
-        self._add_comment(chosen_by_comment, chooser)
+        if not self._is_comment_already_saved(solution_comment):
+            self._add_comment(solution_comment, solver)
+        if not self._is_comment_already_saved(chosen_by_comment):
+            self._add_comment(chosen_by_comment, chooser)
 
         self._update_points(solver, 1)
         rowcount = self._add_solution(submission, solver, solution_comment, chosen_by_comment)
@@ -265,7 +316,8 @@ class Database:
         return rowcount
 
     def soft_remove_point_for_solution(self, submission, solver, remover, removed_by_comment):
-        self._add_comment(removed_by_comment, remover)
+        if not self._is_comment_already_saved(removed_by_comment):
+            self._add_comment(removed_by_comment, remover)
         rowcount = self._soft_remove_solution(submission, solver, removed_by_comment)
         if rowcount > 0:
             rowcount = self._update_points(solver, -1)
@@ -317,7 +369,7 @@ class Database:
 
         return points
 
-    ### Private Methods ###
+    ### Internal Methods ###
 
     def _get_submission_rowid(self, submission):
         return self._get_rowid_from_reddit_id('SELECT rowid FROM submission WHERE id = :reddit_id', {'reddit_id': submission.id})
@@ -349,12 +401,27 @@ class Database:
         return self.cursor.rowcount
 
     @transaction
+    def _is_comment_already_saved(self, comment):
+        select_stmt = 'SELECT COUNT(*) AS comment_count FROM comment WHERE id = :id'
+        self.cursor.execute(select_stmt, {'id': comment.id})
+        row = self.cursor.fetchone()
+        return row['comment_count'] == 1
+
+    @transaction
     def _add_submission(self, submission):
-        insert_stmt = '''
-            INSERT OR IGNORE INTO submission (id, author_id)
-            VALUES (:id, :author_id)
-        '''
-        self.cursor.execute(insert_stmt, {'id': submission.id, 'author_id': submission.author.id})
+        # A "deleted" submission does not have an author, so we need to check whether it exists
+        if submission.author:
+            insert_stmt = '''
+                INSERT OR IGNORE INTO submission (id, author_id)
+                VALUES (:id, :author_id)
+            '''
+            self.cursor.execute(insert_stmt, {'id': submission.id, 'author_id': submission.author.id})
+        else:
+            insert_stmt = '''
+                INSERT OR IGNORE INTO submission (id)
+                VALUES (:id)
+            '''
+            self.cursor.execute(insert_stmt, {'id': submission.id})
         return self.cursor.rowcount
 
     @transaction
