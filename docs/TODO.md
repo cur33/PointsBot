@@ -12,6 +12,9 @@ N/A
 
 ## General
 
+* [ ] Make "!Solved" command text (or all command texts?) configurable by user
+* [ ] Make flair usage configurable
+    * New user suggested that it could be helpful to have point totals in flair
 * [ ] Notifications
     * Let admins know if a comment can't be properly handled
     * Email preferable; could do Reddit message, too
@@ -85,3 +88,4 @@ N/A
     - Maybe even make models like Redditor to combine data storage/access with
         logic, e.g. determining current level
     - Seems like overkill, though
+
